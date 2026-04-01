@@ -9,20 +9,14 @@ use App\Models\ProviderDocument;
 use App\Models\ProviderProfile;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
-    /**
-     * Register a new driver or provider
-     */
     public function register(RegisterRequest $request): JsonResponse
     {
         $data = $request->validated();
 
-        // Create the user
         $user = User::create([
             'name'     => $data['name'],
             'phone'    => $data['phone'],
@@ -31,7 +25,6 @@ class AuthController extends Controller
             'status'   => 'active',
         ]);
 
-        // If provider — create profile + store documents
         if ($data['role'] === 'provider') {
             $profile = ProviderProfile::create([
                 'user_id'       => $user->id,
@@ -45,7 +38,6 @@ class AuthController extends Controller
 
             foreach ($data['documents'] as $doc) {
                 $path = $doc['file']->store('documents', 'public');
-
                 ProviderDocument::create([
                     'provider_id'   => $profile->id,
                     'document_type' => $doc['type'],
@@ -72,9 +64,6 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * Login
-     */
     public function login(LoginRequest $request): JsonResponse
     {
         $user = User::where('phone', $request->phone)->first();
@@ -93,9 +82,7 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // Revoke old tokens
         $user->tokens()->delete();
-
         $token = $user->createToken('api-token')->plainTextToken;
 
         $responseData = [
@@ -109,7 +96,6 @@ class AuthController extends Controller
             ],
         ];
 
-        // Include provider profile if applicable
         if ($user->isProvider()) {
             $responseData['provider_profile'] = $user->providerProfile;
         }
@@ -121,9 +107,6 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Logout
-     */
     public function logout(): JsonResponse
     {
         auth()->user()->currentAccessToken()->delete();

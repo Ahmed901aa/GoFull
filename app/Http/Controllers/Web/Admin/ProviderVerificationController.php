@@ -4,12 +4,10 @@ namespace App\Http\Controllers\Web\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SetAppointmentRequest;
-use App\Models\Notification;
 use App\Models\ProviderProfile;
-use App\Models\User;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 
 class ProviderVerificationController extends Controller
 {
@@ -49,7 +47,7 @@ class ProviderVerificationController extends Controller
 
         $formatted = Carbon::parse($request->appointment_date)->format('D, d M Y \a\t h:i A');
 
-        $this->sendNotification(
+        NotificationService::send(
             $provider->user,
             'Appointment Scheduled',
             "Your verification appointment has been set for {$formatted}.",
@@ -68,7 +66,7 @@ class ProviderVerificationController extends Controller
             'rejection_reason'    => null,
         ]);
 
-        $this->sendNotification(
+        NotificationService::send(
             $provider->user,
             'Account Approved',
             'Congratulations! Your account has been verified. You can now start accepting requests.',
@@ -89,7 +87,7 @@ class ProviderVerificationController extends Controller
             'rejection_reason'    => $request->rejection_reason,
         ]);
 
-        $this->sendNotification(
+        NotificationService::send(
             $provider->user,
             'Account Rejected',
             'Your verification request has been rejected. Reason: ' . $request->rejection_reason,
@@ -97,34 +95,5 @@ class ProviderVerificationController extends Controller
         );
 
         return back()->with('success', "Provider '{$provider->user->name}' rejected.");
-    }
-
-    // ==========================================
-    // Private Helper
-    // ==========================================
-
-    private function sendNotification(User $user, string $title, string $body, array $data = []): void
-    {
-        Notification::create([
-            'user_id' => $user->id,
-            'title'   => $title,
-            'body'    => $body,
-            'data'    => $data,
-        ]);
-
-        if ($user->fcm_token) {
-            Http::withHeaders([
-                'Authorization' => 'key=' . config('services.fcm.server_key'),
-                'Content-Type'  => 'application/json',
-            ])->post('https://fcm.googleapis.com/fcm/send', [
-                'to'           => $user->fcm_token,
-                'notification' => [
-                    'title' => $title,
-                    'body'  => $body,
-                    'sound' => 'default',
-                ],
-                'data' => $data,
-            ]);
-        }
     }
 }

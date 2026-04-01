@@ -5,18 +5,13 @@ namespace App\Http\Controllers\API\Driver;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Driver\FuelDeliveryRequest;
 use App\Http\Requests\Driver\TowingRequest;
-use App\Models\Notification;
 use App\Models\ProviderProfile;
 use App\Models\ServiceRequest;
-use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Http;
 
 class ServiceRequestController extends Controller
 {
-    /**
-     * Get driver's request history
-     */
     public function index(): JsonResponse
     {
         $requests = auth()->user()
@@ -25,15 +20,9 @@ class ServiceRequestController extends Controller
             ->latest()
             ->paginate(15);
 
-        return response()->json([
-            'success' => true,
-            'data'    => $requests,
-        ]);
+        return response()->json(['success' => true, 'data' => $requests]);
     }
 
-    /**
-     * Create fuel delivery request
-     */
     public function storeFuel(FuelDeliveryRequest $request): JsonResponse
     {
         $hasActive = auth()->user()
@@ -62,21 +51,18 @@ class ServiceRequestController extends Controller
             'notes'            => $data['notes'] ?? null,
         ]);
 
-        // Notify all available approved fuel providers
         $providers = ProviderProfile::where('service_type', 'fuel_delivery')
             ->where('verification_status', 'approved')
             ->where('is_available', true)
             ->with('user')
             ->get();
 
-        foreach ($providers as $provider) {
-            $this->sendNotification(
-                $provider->user,
-                'New Fuel Delivery Request',
-                'A new fuel delivery request is available near you.',
-                ['request_id' => $serviceRequest->id, 'type' => 'fuel_delivery']
-            );
-        }
+        NotificationService::sendToMany(
+            $providers->pluck('user')->filter(),
+            'New Fuel Delivery Request',
+            'A new fuel delivery request is available near you.',
+            ['request_id' => $serviceRequest->id, 'type' => 'fuel_delivery']
+        );
 
         return response()->json([
             'success' => true,
@@ -85,9 +71,6 @@ class ServiceRequestController extends Controller
         ], 201);
     }
 
-    /**
-     * Create towing request
-     */
     public function storeTowing(TowingRequest $request): JsonResponse
     {
         $hasActive = auth()->user()
@@ -115,21 +98,18 @@ class ServiceRequestController extends Controller
             'notes'            => $data['notes'] ?? null,
         ]);
 
-        // Notify all available approved towing providers
         $providers = ProviderProfile::where('service_type', 'towing')
             ->where('verification_status', 'approved')
             ->where('is_available', true)
             ->with('user')
             ->get();
 
-        foreach ($providers as $provider) {
-            $this->sendNotification(
-                $provider->user,
-                'New Towing Request',
-                'A new towing request is available near you.',
-                ['request_id' => $serviceRequest->id, 'type' => 'towing']
-            );
-        }
+        NotificationService::sendToMany(
+            $providers->pluck('user')->filter(),
+            'New Towing Request',
+            'A new towing request is available near you.',
+            ['request_id' => $serviceRequest->id, 'type' => 'towing']
+        );
 
         return response()->json([
             'success' => true,
@@ -138,16 +118,10 @@ class ServiceRequestController extends Controller
         ], 201);
     }
 
-    /**
-     * Get single request details
-     */
     public function show(ServiceRequest $request): JsonResponse
     {
         if ($request->driver_id !== auth()->id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Request not found.',
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Request not found.'], 404);
         }
 
         return response()->json([
@@ -156,16 +130,10 @@ class ServiceRequestController extends Controller
         ]);
     }
 
-    /**
-     * Cancel a request
-     */
     public function cancel(ServiceRequest $request): JsonResponse
     {
         if ($request->driver_id !== auth()->id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Request not found.',
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Request not found.'], 404);
         }
 
         if (! $request->isActive()) {
@@ -182,9 +150,8 @@ class ServiceRequestController extends Controller
             'cancellation_reason' => 'Cancelled by driver.',
         ]);
 
-        // Notify provider if one was already assigned
         if ($request->provider_id) {
-            $this->sendNotification(
+            NotificationService::send(
                 $request->provider->user,
                 'Request Cancelled',
                 'The driver has cancelled the request.',
@@ -192,43 +159,6 @@ class ServiceRequestController extends Controller
             );
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Request cancelled successfully.',
-        ]);
-    }
-
-    // ==========================================
-    // Private Helper
-    // ==========================================
-
-    /**
-     * Save notification to DB and send FCM push
-     */
-    private function sendNotification(User $user, string $title, string $body, array $data = []): void
-    {
-        // 1. Save to database
-        Notification::create([
-            'user_id' => $user->id,
-            'title'   => $title,
-            'body'    => $body,
-            'data'    => $data,
-        ]);
-
-        // 2. Send FCM push if token exists
-        if ($user->fcm_token) {
-            Http::withHeaders([
-                'Authorization' => 'key=' . config('services.fcm.server_key'),
-                'Content-Type'  => 'application/json',
-            ])->post('https://fcm.googleapis.com/fcm/send', [
-                'to'           => $user->fcm_token,
-                'notification' => [
-                    'title' => $title,
-                    'body'  => $body,
-                    'sound' => 'default',
-                ],
-                'data' => $data,
-            ]);
-        }
+        return response()->json(['success' => true, 'message' => 'Request cancelled successfully.']);
     }
 }

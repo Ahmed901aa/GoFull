@@ -9,36 +9,34 @@ use App\Http\Controllers\Web\Admin\UserController;
 use App\Http\Controllers\Web\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 
-// Guest
+// ─── Guest ────────────────────────────────────────────────────
 Route::middleware('guest')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/login',  [LoginController::class, 'showForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
 });
 
-// Admin + Employee
+// ─── Admin + Employee ─────────────────────────────────────────
 Route::middleware(['auth', 'role:admin,employee'])->prefix('admin')->name('admin.')->group(function () {
 
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::post('/logout',   [LoginController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Provider Verification
     Route::get('/providers',                          [ProviderVerificationController::class, 'index'])->name('providers.index');
     Route::get('/providers/{provider}',               [ProviderVerificationController::class, 'show'])->name('providers.show');
     Route::patch('/providers/{provider}/appointment', [ProviderVerificationController::class, 'setAppointment'])->name('providers.appointment');
     Route::patch('/providers/{provider}/approve',     [ProviderVerificationController::class, 'approve'])->name('providers.approve');
     Route::patch('/providers/{provider}/reject',      [ProviderVerificationController::class, 'reject'])->name('providers.reject');
 
-    // Service Monitor
     Route::get('/monitor',           [ServiceMonitorController::class, 'index'])->name('monitor.index');
     Route::get('/monitor/{request}', [ServiceMonitorController::class, 'show'])->name('monitor.show');
 
     // Admin Only
     Route::middleware('role:admin')->group(function () {
-        Route::get('/users',                  [UserController::class, 'index'])->name('users.index');
-        Route::get('/users/{user}',           [UserController::class, 'show'])->name('users.show');
-        Route::patch('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
-        Route::patch('/users/{user}/activate',[UserController::class, 'activate'])->name('users.activate');
-        Route::delete('/users/{user}',        [UserController::class, 'destroy'])->name('users.destroy');
+        Route::get('/users',                   [UserController::class, 'index'])->name('users.index');
+        Route::get('/users/{user}',            [UserController::class, 'show'])->name('users.show');
+        Route::patch('/users/{user}/suspend',  [UserController::class, 'suspend'])->name('users.suspend');
+        Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
+        Route::delete('/users/{user}',         [UserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 

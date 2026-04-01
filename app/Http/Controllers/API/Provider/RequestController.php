@@ -4,17 +4,12 @@ namespace App\Http\Controllers\API\Provider;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Provider\UpdateStatusRequest;
-use App\Models\Notification;
 use App\Models\ServiceRequest;
-use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Http;
 
 class RequestController extends Controller
 {
-    /**
-     * Get pending requests matching provider's service type
-     */
     public function index(): JsonResponse
     {
         $provider = auth()->user()->providerProfile;
@@ -25,31 +20,19 @@ class RequestController extends Controller
             ->latest()
             ->paginate(15);
 
-        return response()->json([
-            'success' => true,
-            'data'    => $requests,
-        ]);
+        return response()->json(['success' => true, 'data' => $requests]);
     }
 
-    /**
-     * Accept a request
-     */
     public function accept(ServiceRequest $request): JsonResponse
     {
         $provider = auth()->user()->providerProfile;
 
         if (! $provider->isApproved()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account is not verified yet.',
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'Your account is not verified yet.'], 403);
         }
 
         if (! $provider->is_available) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You are currently set as unavailable.',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'You are currently set as unavailable.'], 422);
         }
 
         $hasActive = ServiceRequest::where('provider_id', $provider->id)
@@ -64,17 +47,11 @@ class RequestController extends Controller
         }
 
         if (! $request->isPending()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This request is no longer available.',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'This request is no longer available.'], 422);
         }
 
         if ($request->service_type !== $provider->service_type) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This request does not match your service type.',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'This request does not match your service type.'], 422);
         }
 
         $request->update([
@@ -83,8 +60,7 @@ class RequestController extends Controller
             'accepted_at' => now(),
         ]);
 
-        // Notify driver
-        $this->sendNotification(
+        NotificationService::send(
             $request->driver,
             'Request Accepted',
             'A provider has accepted your request and is on the way.',
@@ -98,40 +74,24 @@ class RequestController extends Controller
         ]);
     }
 
-    /**
-     * Reject a request — leave it pending for others
-     */
     public function reject(ServiceRequest $request): JsonResponse
     {
         if (! $request->isPending()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only pending requests can be rejected.',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Only pending requests can be rejected.'], 422);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Request rejected.',
-        ]);
+        return response()->json(['success' => true, 'message' => 'Request rejected.']);
     }
 
-    /**
-     * Update request status — fixed chain
-     */
     public function updateStatus(UpdateStatusRequest $request, ServiceRequest $serviceRequest): JsonResponse
     {
         $provider = auth()->user()->providerProfile;
 
         if ($serviceRequest->provider_id !== $provider->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Request not found.',
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Request not found.'], 404);
         }
 
-        $newStatus = $request->status;
-
+        $newStatus  = $request->status;
         $timestamps = [
             'arrived'   => ['arrived_at'   => now()],
             'completed' => ['completed_at' => now()],
@@ -142,16 +102,15 @@ class RequestController extends Controller
             $timestamps[$newStatus] ?? []
         ));
 
-        // Notification messages per status
         $messages = [
-            'en_route'    => ['title' => 'Provider En Route',  'body' => 'Your provider is on the way to your location.'],
-            'arrived'     => ['title' => 'Provider Arrived',   'body' => 'Your provider has arrived at your location.'],
-            'in_progress' => ['title' => 'Service In Progress','body' => 'Your service is now in progress.'],
-            'completed'   => ['title' => 'Service Completed',  'body' => 'Your service is complete. Please rate your experience.'],
+            'en_route'    => ['title' => 'Provider En Route',   'body' => 'Your provider is on the way.'],
+            'arrived'     => ['title' => 'Provider Arrived',    'body' => 'Your provider has arrived at your location.'],
+            'in_progress' => ['title' => 'Service In Progress', 'body' => 'Your service is now in progress.'],
+            'completed'   => ['title' => 'Service Completed',   'body' => 'Service complete. Please rate your experience.'],
         ];
 
         if (isset($messages[$newStatus])) {
-            $this->sendNotification(
+            NotificationService::send(
                 $serviceRequest->driver,
                 $messages[$newStatus]['title'],
                 $messages[$newStatus]['body'],
@@ -164,34 +123,5 @@ class RequestController extends Controller
             'message' => "Status updated to '{$newStatus}' successfully.",
             'data'    => $serviceRequest->fresh(['driver', 'provider']),
         ]);
-    }
-
-    // ==========================================
-    // Private Helper
-    // ==========================================
-
-    private function sendNotification(User $user, string $title, string $body, array $data = []): void
-    {
-        Notification::create([
-            'user_id' => $user->id,
-            'title'   => $title,
-            'body'    => $body,
-            'data'    => $data,
-        ]);
-
-        if ($user->fcm_token) {
-            Http::withHeaders([
-                'Authorization' => 'key=' . config('services.fcm.server_key'),
-                'Content-Type'  => 'application/json',
-            ])->post('https://fcm.googleapis.com/fcm/send', [
-                'to'           => $user->fcm_token,
-                'notification' => [
-                    'title' => $title,
-                    'body'  => $body,
-                    'sound' => 'default',
-                ],
-                'data' => $data,
-            ]);
-        }
     }
 }

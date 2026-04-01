@@ -3,47 +3,29 @@
 namespace App\Http\Controllers\API\Provider;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function updateAvailability(Request $request): JsonResponse
     {
-        //
-    }
+        $request->validate([
+            'is_available' => ['required', 'boolean'],
+        ]);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        $profile = auth()->user()->providerProfile;
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        if (! $profile) {
+            return response()->json(['success' => false, 'message' => 'Provider profile not found.'], 404);
+        }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
+        $profile->update(['is_available' => $request->is_available]);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json([
+            'success' => true,
+            'message' => 'Availability updated to ' . ($request->is_available ? 'Online' : 'Offline') . '.',
+            'data'    => ['is_available' => $profile->is_available],
+        ]);
     }
 }

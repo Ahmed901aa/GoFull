@@ -2,31 +2,84 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $fillable = [
+        'name',
+        'phone',
+        'password',
+        'role',
+        'status',
+        'fcm_token',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected $casts = [
+        'password' => 'hashed',
+    ];
+
+    // ========== Helpers ==========
+
+    public function isDriver(): bool
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->role === 'driver';
+    }
+
+    public function isProvider(): bool
+    {
+        return $this->role === 'provider';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isEmployee(): bool
+    {
+        return $this->role === 'employee';
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    // ========== Relationships ==========
+
+    // User (provider) له profile واحد
+    public function providerProfile()
+    {
+        return $this->hasOne(ProviderProfile::class);
+    }
+
+    // User (driver) له طلبات كثيرة
+    public function serviceRequests()
+    {
+        return $this->hasMany(ServiceRequest::class, 'driver_id');
+    }
+
+    // User له إشعارات كثيرة
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    // Admin/Employee وثّق providers
+    public function verifiedProviders()
+    {
+        return $this->hasMany(ProviderProfile::class, 'verified_by');
     }
 }

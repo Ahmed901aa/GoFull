@@ -2,28 +2,36 @@
 
 namespace App\Http\Requests\Driver;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class TowingRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return auth()->check() && auth()->user()->isDriver();
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'driver_latitude'  => ['required', 'numeric', 'between:-90,90'],
+            'driver_longitude' => ['required', 'numeric', 'between:-180,180'],
+            'driver_address'   => ['nullable', 'string', 'max:255'],
+            'plate_number'     => ['required', 'string', 'max:20'],
+            'notes'            => ['nullable', 'string', 'max:500'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'driver_latitude.required'  => 'Location latitude is required.',
+            'driver_latitude.between'   => 'Invalid latitude value.',
+            'driver_longitude.required' => 'Location longitude is required.',
+            'driver_longitude.between'  => 'Invalid longitude value.',
+            'plate_number.required'     => 'Vehicle plate number is required.',
+            'plate_number.max'          => 'Plate number cannot exceed 20 characters.',
+            'notes.max'                 => 'Notes cannot exceed 500 characters.',
         ];
     }
 }

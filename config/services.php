@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'isend' => [
+    'api_token' => env('ISEND_API_TOKEN'),
+    'sender_id' => env('ISEND_SENDER_ID', 'GoFull'),
+    'group_id'  => env('ISEND_GROUP_ID', ''),
+],
+
 ];

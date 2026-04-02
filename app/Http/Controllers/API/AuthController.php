@@ -116,4 +116,39 @@ class AuthController extends Controller
             'message' => 'Logged out successfully.',
         ]);
     }
+
+    // ─── Change Password (مسجّل دخول) ─────────────────────────────
+public function changePassword(ChangePasswordRequest $request): JsonResponse
+{
+    $user = auth()->user();
+
+    if (! Hash::check($request->current_password, $user->password)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Current password is incorrect.',
+        ], 422);
+    }
+
+    if (Hash::check($request->password, $user->password)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'New password must be different from current password.',
+        ], 422);
+    }
+
+    $user->update([
+        'password' => Hash::make($request->password),
+    ]);
+
+    // إلغاء كل الـ tokens القديمة وإنشاء token جديد
+    $user->tokens()->delete();
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Password changed successfully.',
+        'data'    => ['token' => $token],
+    ]);
+}
+
 }

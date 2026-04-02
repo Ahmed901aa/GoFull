@@ -18,6 +18,8 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword']); // ← هنا
+
 
     // Driver
     Route::middleware('role:driver')->prefix('driver')->group(function () {

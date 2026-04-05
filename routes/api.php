@@ -33,11 +33,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Provider
     Route::middleware(['role:provider', 'provider.approved'])->prefix('provider')->group(function () {
-        Route::patch('/profile/availability',      [ProfileController::class, 'updateAvailability']);
-        Route::get('/requests',                    [RequestController::class, 'index']);
-        Route::patch('/requests/{request}/accept', [RequestController::class, 'accept']);
-        Route::patch('/requests/{request}/reject', [RequestController::class, 'reject']);
-        Route::patch('/requests/{request}/status', [RequestController::class, 'updateStatus']);
+        Route::get('/profile',                              [ProfileController::class, 'show']);
+        Route::patch('/profile/availability',               [ProfileController::class, 'updateAvailability']);
+        Route::get('/requests',                             [RequestController::class, 'index']);
+        Route::get('/requests/history',                     [RequestController::class, 'history']);
+        Route::patch('/requests/{request}/accept',          [RequestController::class, 'accept']);
+        Route::patch('/requests/{request}/reject',          [RequestController::class, 'reject']);
+        Route::patch('/requests/{request}/status',          [RequestController::class, 'updateStatus']);
+        Route::post('/requests/{serviceRequest}/rate',      [RequestController::class, 'rateCustomer']);
     });
 
     // Shared

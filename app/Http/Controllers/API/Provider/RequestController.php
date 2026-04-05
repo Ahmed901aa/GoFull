@@ -74,6 +74,51 @@ class RequestController extends Controller
         ]);
     }
 
+    public function history(): JsonResponse
+    {
+        $provider = auth()->user()->providerProfile;
+
+        $requests = ServiceRequest::where('provider_id', $provider->id)
+            ->whereIn('status', ['completed', 'cancelled'])
+            ->with(['driver', 'rating'])
+            ->latest()
+            ->paginate(15);
+
+        return response()->json(['success' => true, 'data' => $requests]);
+    }
+
+    public function rateCustomer(ServiceRequest $serviceRequest): JsonResponse
+    {
+        $provider = auth()->user()->providerProfile;
+
+        if ($serviceRequest->provider_id !== $provider->id) {
+            return response()->json(['success' => false, 'message' => 'Request not found.'], 404);
+        }
+
+        if (! $serviceRequest->isCompleted()) {
+            return response()->json(['success' => false, 'message' => 'Can only rate completed requests.'], 422);
+        }
+
+        request()->validate([
+            'rating'  => ['required', 'integer', 'min:1', 'max:5'],
+            'comment' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $rating = $serviceRequest->rating()->updateOrCreate(
+            ['request_id' => $serviceRequest->id],
+            [
+                'rating'  => request('rating'),
+                'comment' => request('comment'),
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rating submitted successfully.',
+            'data'    => $rating,
+        ]);
+    }
+
     public function reject(ServiceRequest $request): JsonResponse
     {
         if (! $request->isPending()) {

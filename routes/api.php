@@ -1,9 +1,13 @@
 <?php
 
+use App\Http\Controllers\API\AppSettingController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\Driver\RatingController;
 use App\Http\Controllers\API\Driver\ServiceRequestController;
+use App\Http\Controllers\API\FuelPriceController;
+use App\Http\Controllers\API\HomeController;
 use App\Http\Controllers\API\NotificationController;
+use App\Http\Controllers\API\ProfileController as UserProfileController;
 use App\Http\Controllers\API\Provider\ProfileController;
 use App\Http\Controllers\API\Provider\RequestController;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +17,10 @@ Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login',    [AuthController::class, 'login']);
 });
+
+// ─── Public Content ──────────────────────────────────────────
+Route::get('/fuel/prices',   [FuelPriceController::class, 'index']);
+Route::get('/app/settings',  [AppSettingController::class, 'index']);
 
 // ─── Authenticated ─────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -45,4 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Shared
     Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/home',          [HomeController::class, 'index']);
+    Route::get('/profile',       [UserProfileController::class, 'show']);
+    Route::patch('/profile',     [UserProfileController::class, 'update']);
 });

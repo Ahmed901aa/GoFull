@@ -27,12 +27,22 @@ class ServiceRequest extends Model
         'cancelled_at',
         'cancelled_by',
         'cancellation_reason',
+        'price_per_liter',
+        'subtotal',
+        'service_fee',
+        'total',
+        'payment_method',
+        'payment_status',
     ];
 
     protected $casts = [
         'driver_latitude'  => 'decimal:8',
         'driver_longitude' => 'decimal:8',
         'fuel_quantity'    => 'decimal:2',
+        'price_per_liter'  => 'decimal:2',
+        'subtotal'         => 'decimal:2',
+        'service_fee'      => 'decimal:2',
+        'total'            => 'decimal:2',
         'accepted_at'      => 'datetime',
         'arrived_at'       => 'datetime',
         'completed_at'     => 'datetime',

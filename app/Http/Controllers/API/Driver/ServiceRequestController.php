@@ -41,6 +41,14 @@ class ServiceRequestController extends Controller
 
         $data = $request->validated();
 
+        // Auto-calculate pricing from fuel_prices table
+        $fuelPrice = FuelPrice::where('fuel_type', $data['fuel_type'])->active()->first();
+        $pricePerLiter = $fuelPrice ? $fuelPrice->price_per_liter : 0;
+        $quantity = $data['fuel_quantity'];
+        $subtotal = round($pricePerLiter * $quantity, 2);
+        $serviceFee = (float) AppSetting::getValue('service_fee', 15);
+        $total = round($subtotal + $serviceFee, 2);
+
         $serviceRequest = ServiceRequest::create([
             'driver_id'        => auth()->id(),
             'service_type'     => 'fuel_delivery',
@@ -50,6 +58,10 @@ class ServiceRequestController extends Controller
             'driver_address'   => $data['driver_address'] ?? null,
             'fuel_type'        => $data['fuel_type'],
             'fuel_quantity'    => $data['fuel_quantity'],
+            'price_per_liter'  => $pricePerLiter,
+            'subtotal'         => $subtotal,
+            'service_fee'      => $serviceFee,
+            'total'            => $total,
             'notes'            => $data['notes'] ?? null,
         ]);
 
@@ -89,6 +101,11 @@ class ServiceRequestController extends Controller
 
         $data = $request->validated();
 
+        // Auto-calculate towing pricing from app_settings
+        $towingBasePrice = (float) AppSetting::getValue('towing_base_price', 50);
+        $serviceFee = (float) AppSetting::getValue('service_fee', 15);
+        $total = round($towingBasePrice + $serviceFee, 2);
+
         $serviceRequest = ServiceRequest::create([
             'driver_id'        => auth()->id(),
             'service_type'     => 'towing',
@@ -97,6 +114,9 @@ class ServiceRequestController extends Controller
             'driver_longitude' => $data['driver_longitude'],
             'driver_address'   => $data['driver_address'] ?? null,
             'plate_number'     => $data['plate_number'],
+            'subtotal'         => $towingBasePrice,
+            'service_fee'      => $serviceFee,
+            'total'            => $total,
             'notes'            => $data['notes'] ?? null,
         ]);
 

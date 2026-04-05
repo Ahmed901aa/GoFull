@@ -5,6 +5,8 @@ namespace App\Http\Controllers\API\Driver;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Driver\FuelDeliveryRequest;
 use App\Http\Requests\Driver\TowingRequest;
+use App\Models\AppSetting;
+use App\Models\FuelPrice;
 use App\Models\ProviderProfile;
 use App\Models\ServiceRequest;
 use App\Services\NotificationService;

@@ -34,6 +34,11 @@ class UpdateStatusRequest extends FormRequest
         $validator->after(function ($validator) {
             $request = $this->route('request');
 
+            // Resolve model if route binding gave us a raw ID
+            if (is_string($request) || is_int($request)) {
+                $request = \App\Models\ServiceRequest::find($request);
+            }
+
             if (! $request) return;
 
             $chain = [

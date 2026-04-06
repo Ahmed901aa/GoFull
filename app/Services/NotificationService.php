@@ -34,7 +34,7 @@ class NotificationService
         }
     }
 
-    public static function sendToMany(Collection $users, string $title, string $body, array $data = []): void
+    public static function sendToMany(iterable $users, string $title, string $body, array $data = []): void
     {
         foreach ($users as $user) {
             static::send($user, $title, $body, $data);

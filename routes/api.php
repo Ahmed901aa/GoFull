@@ -47,7 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/requests/history',                     [RequestController::class, 'history']);
         Route::patch('/requests/{request}/accept',          [RequestController::class, 'accept']);
         Route::patch('/requests/{request}/reject',          [RequestController::class, 'reject']);
-        Route::patch('/requests/{request}/status',          [RequestController::class, 'updateStatus']);
+        Route::patch('/requests/{serviceRequest}/status',    [RequestController::class, 'updateStatus']);
         Route::post('/requests/{serviceRequest}/rate',      [RequestController::class, 'rateCustomer']);
     });
 

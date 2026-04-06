@@ -74,6 +74,22 @@ class RequestController extends Controller
         ]);
     }
 
+    public function getActive(): JsonResponse
+    {
+        $provider = auth()->user()->providerProfile;
+
+        $activeRequest = ServiceRequest::where('provider_id', $provider->id)
+            ->whereIn('status', ['accepted', 'en_route', 'arrived', 'in_progress'])
+            ->with(['driver', 'provider'])
+            ->latest()
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $activeRequest,
+        ]);
+    }
+
     public function history(): JsonResponse
     {
         $provider = auth()->user()->providerProfile;

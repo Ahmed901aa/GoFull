@@ -66,4 +66,26 @@ class ProfileController extends Controller
             'data'    => ['is_available' => $profile->is_available],
         ]);
     }
+
+    public function updateLocation(Request $request): JsonResponse
+    {
+        $request->validate([
+            'latitude'  => ['required', 'numeric'],
+            'longitude' => ['required', 'numeric'],
+        ]);
+
+        $profile = auth()->user()->providerProfile;
+
+        if (! $profile) {
+            return response()->json(['success' => false, 'message' => 'Provider profile not found.'], 404);
+        }
+
+        $profile->update([
+            'current_latitude'    => $request->latitude,
+            'current_longitude'   => $request->longitude,
+            'location_updated_at' => now(),
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Location updated.']);
+    }
 }

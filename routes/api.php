@@ -43,6 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware(['role:provider', 'provider.approved'])->prefix('provider')->group(function () {
         Route::get('/profile',                              [ProfileController::class, 'show']);
         Route::patch('/profile/availability',               [ProfileController::class, 'updateAvailability']);
+        Route::patch('/profile/location',                   [ProfileController::class, 'updateLocation']);
         Route::get('/requests',                             [RequestController::class, 'index']);
         Route::get('/requests/active',                      [RequestController::class, 'getActive']);
         Route::get('/requests/history',                     [RequestController::class, 'history']);
@@ -53,8 +54,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Shared
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::get('/home',          [HomeController::class, 'index']);
+    Route::get('/notifications',   [NotificationController::class, 'index']);
+    Route::post('/fcm-token',      [NotificationController::class, 'updateFcmToken']);
+    Route::get('/home',            [HomeController::class, 'index']);
     Route::get('/profile',       [UserProfileController::class, 'show']);
     Route::patch('/profile',     [UserProfileController::class, 'update']);
 });

@@ -26,6 +26,9 @@ class ProviderProfile extends Model
         'verified_by',
         'average_rating',
         'total_ratings',
+        'current_latitude',
+        'current_longitude',
+        'location_updated_at',
     ];
 
     protected $casts = [

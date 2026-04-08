@@ -28,17 +28,16 @@ class DatabaseSeeder extends Seeder
 
         // ── Fuel Prices ──────────────────────────────────────
         FuelPrice::updateOrCreate(
-            ['fuel_type' => 'petrol', 'name_ar' => 'بنزين 91'],
-            ['price_per_liter' => 0.15, 'is_active' => true]
-        );
-        FuelPrice::updateOrCreate(
-            ['fuel_type' => 'petrol', 'name_ar' => 'بنزين 95'],
-            ['price_per_liter' => 0.25, 'is_active' => true]
+            ['fuel_type' => 'petrol', 'name_ar' => 'بنزين'],
+            ['price_per_liter' => 0.75, 'is_active' => true]
         );
         FuelPrice::updateOrCreate(
             ['fuel_type' => 'diesel', 'name_ar' => 'ديزل'],
-            ['price_per_liter' => 0.15, 'is_active' => true]
+            ['price_per_liter' => 0.85, 'is_active' => true]
         );
+        // Deactivate old 91/95 entries if they exist
+        FuelPrice::where('name_ar', 'بنزين 91')->update(['is_active' => false]);
+        FuelPrice::where('name_ar', 'بنزين 95')->update(['is_active' => false]);
 
         // ── Banners / Offers ─────────────────────────────────
         Banner::updateOrCreate(

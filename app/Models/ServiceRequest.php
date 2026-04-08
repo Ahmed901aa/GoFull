@@ -17,6 +17,9 @@ class ServiceRequest extends Model
         'driver_latitude',
         'driver_longitude',
         'driver_address',
+        'destination_latitude',
+        'destination_longitude',
+        'destination_address',
         'notes',
         'fuel_type',
         'fuel_quantity',
@@ -36,8 +39,10 @@ class ServiceRequest extends Model
     ];
 
     protected $casts = [
-        'driver_latitude'  => 'decimal:8',
-        'driver_longitude' => 'decimal:8',
+        'driver_latitude'       => 'decimal:8',
+        'driver_longitude'      => 'decimal:8',
+        'destination_latitude'  => 'decimal:8',
+        'destination_longitude' => 'decimal:8',
         'fuel_quantity'    => 'decimal:2',
         'price_per_liter'  => 'decimal:2',
         'subtotal'         => 'decimal:2',

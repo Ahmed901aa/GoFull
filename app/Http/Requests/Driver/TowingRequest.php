@@ -14,11 +14,14 @@ class TowingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'driver_latitude'  => ['required', 'numeric', 'between:-90,90'],
-            'driver_longitude' => ['required', 'numeric', 'between:-180,180'],
-            'driver_address'   => ['nullable', 'string', 'max:255'],
-            'plate_number'     => ['required', 'string', 'max:20'],
-            'notes'            => ['nullable', 'string', 'max:500'],
+            'driver_latitude'        => ['required', 'numeric', 'between:-90,90'],
+            'driver_longitude'       => ['required', 'numeric', 'between:-180,180'],
+            'driver_address'         => ['nullable', 'string', 'max:255'],
+            'destination_latitude'   => ['nullable', 'numeric', 'between:-90,90'],
+            'destination_longitude'  => ['nullable', 'numeric', 'between:-180,180'],
+            'destination_address'    => ['nullable', 'string', 'max:255'],
+            'plate_number'           => ['required', 'string', 'max:20'],
+            'notes'                  => ['nullable', 'string', 'max:500'],
         ];
     }
 

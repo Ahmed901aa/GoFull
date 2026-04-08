@@ -14,8 +14,7 @@ class RequestController extends Controller
     {
         $provider = auth()->user()->providerProfile;
 
-        $requests = ServiceRequest::where('service_type', $provider->service_type)
-            ->where('status', 'pending')
+        $requests = ServiceRequest::where('status', 'pending')
             ->with('driver')
             ->latest()
             ->paginate(15);
@@ -48,10 +47,6 @@ class RequestController extends Controller
 
         if (! $request->isPending()) {
             return response()->json(['success' => false, 'message' => 'This request is no longer available.'], 422);
-        }
-
-        if ($request->service_type !== $provider->service_type) {
-            return response()->json(['success' => false, 'message' => 'This request does not match your service type.'], 422);
         }
 
         $request->update([

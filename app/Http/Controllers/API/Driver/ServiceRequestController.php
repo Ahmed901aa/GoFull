@@ -107,17 +107,20 @@ class ServiceRequestController extends Controller
         $total = round($towingBasePrice + $serviceFee, 2);
 
         $serviceRequest = ServiceRequest::create([
-            'driver_id'        => auth()->id(),
-            'service_type'     => 'towing',
-            'status'           => 'pending',
-            'driver_latitude'  => $data['driver_latitude'],
-            'driver_longitude' => $data['driver_longitude'],
-            'driver_address'   => $data['driver_address'] ?? null,
-            'plate_number'     => $data['plate_number'],
-            'subtotal'         => $towingBasePrice,
-            'service_fee'      => $serviceFee,
-            'total'            => $total,
-            'notes'            => $data['notes'] ?? null,
+            'driver_id'              => auth()->id(),
+            'service_type'           => 'towing',
+            'status'                 => 'pending',
+            'driver_latitude'        => $data['driver_latitude'],
+            'driver_longitude'       => $data['driver_longitude'],
+            'driver_address'         => $data['driver_address'] ?? null,
+            'destination_latitude'   => $data['destination_latitude'] ?? null,
+            'destination_longitude'  => $data['destination_longitude'] ?? null,
+            'destination_address'    => $data['destination_address'] ?? null,
+            'plate_number'           => $data['plate_number'],
+            'subtotal'               => $towingBasePrice,
+            'service_fee'            => $serviceFee,
+            'total'                  => $total,
+            'notes'                  => $data['notes'] ?? null,
         ]);
 
         $providers = ProviderProfile::where('service_type', 'towing')

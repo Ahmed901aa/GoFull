@@ -1,7 +1,7 @@
 <aside class="sidebar" id="sidebar">
     {{-- Logo --}}
     <div class="sidebar-logo">
-        <div class="sidebar-logo-icon">⛽</div>
+        <img src="{{ asset('images/logo.png') }}" alt="GoFull" style="width:36px;height:36px;border-radius:6px;object-fit:contain;">
         <div class="sidebar-logo-text">Go<span>Full</span></div>
     </div>
 

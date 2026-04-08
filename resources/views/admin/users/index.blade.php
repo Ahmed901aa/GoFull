@@ -4,34 +4,32 @@
 @section('page-title', 'إدارة المستخدمين')
 
 @section('content')
-    <section class="page-card">
-        <h2 class="page-heading">قائمة المستخدمين</h2>
-        <p class="page-text">إدارة جميع السائقين ومزودي الخدمة المسجلين.</p>
+    {{-- Search & Filters --}}
+    <form method="GET" action="{{ route('admin.users.index') }}" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="بحث بالاسم أو رقم الهاتف..." class="form-control" style="flex:1;min-width:200px;">
+        <select name="role" class="form-control" style="width:140px;">
+            <option value="">كل الأدوار</option>
+            <option value="driver" {{ request('role') === 'driver' ? 'selected' : '' }}>عميل</option>
+            <option value="provider" {{ request('role') === 'provider' ? 'selected' : '' }}>مزود خدمة</option>
+        </select>
+        <select name="status" class="form-control" style="width:140px;">
+            <option value="">كل الحالات</option>
+            <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>نشط</option>
+            <option value="suspended" {{ request('status') === 'suspended' ? 'selected' : '' }}>معلّق</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">بحث</button>
+    </form>
 
-        {{-- Search & Filters --}}
-        <form method="GET" action="{{ route('admin.users.index') }}" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="بحث بالاسم أو رقم الهاتف..." class="form-input" style="flex:1;min-width:200px;">
-            <select name="role" class="form-input" style="width:140px;">
-                <option value="">كل الأدوار</option>
-                <option value="driver" {{ request('role') === 'driver' ? 'selected' : '' }}>سائق</option>
-                <option value="provider" {{ request('role') === 'provider' ? 'selected' : '' }}>مزود خدمة</option>
-            </select>
-            <select name="status" class="form-input" style="width:140px;">
-                <option value="">كل الحالات</option>
-                <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>نشط</option>
-                <option value="suspended" {{ request('status') === 'suspended' ? 'selected' : '' }}>معلّق</option>
-            </select>
-            <button type="submit" class="btn btn-primary btn-sm">بحث</button>
-        </form>
-
-        <div class="table-wrap">
-            <table class="table">
+    <div class="card">
+        <div class="table-wrapper">
+            <table>
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>الاسم</th>
                         <th>رقم الهاتف</th>
                         <th>الدور</th>
+                        <th>الطلبات المكتملة</th>
                         <th>الحالة</th>
                         <th>تاريخ التسجيل</th>
                         <th>إجراءات</th>
@@ -41,12 +39,22 @@
                     @forelse($users as $user)
                     <tr>
                         <td class="td-muted td-mono">#{{ $user->id }}</td>
-                        <td>{{ $user->name }}</td>
+                        <td>
+                            <a href="{{ route('admin.users.show', $user) }}" style="font-weight:600;color:var(--primary);">
+                                {{ $user->name }}
+                            </a>
+                        </td>
                         <td class="td-muted" dir="ltr">{{ $user->phone }}</td>
                         <td>
                             <span class="badge badge-primary">
-                                {{ $user->role === 'driver' ? 'سائق' : 'مزود خدمة' }}
+                                {{ $user->role === 'driver' ? '👤 عميل' : '🚗 مزود خدمة' }}
                             </span>
+                        </td>
+                        <td>
+                            <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-weight:700;">
+                                {{ $user->completed_orders_count ?? 0 }}
+                            </span>
+                            <span style="font-size:11px;color:var(--text-muted);">/ {{ $user->total_orders_count ?? 0 }}</span>
                         </td>
                         <td>
                             @if($user->status === 'active')
@@ -56,26 +64,25 @@
                             @endif
                         </td>
                         <td class="td-muted" style="font-size:12px;">{{ $user->created_at->format('Y-m-d') }}</td>
-                        <td style="display:flex;gap:6px;">
-                            @if($user->status === 'active')
-                                <form method="POST" action="{{ route('admin.users.suspend', $user) }}" onsubmit="return confirm('هل تريد تعليق هذا المستخدم؟')">
-                                    @csrf @method('PATCH')
-                                    <button class="btn btn-sm" style="background:#f8d7da;color:#721c24;">تعليق</button>
-                                </form>
-                            @else
-                                <form method="POST" action="{{ route('admin.users.activate', $user) }}" onsubmit="return confirm('هل تريد تفعيل هذا المستخدم؟')">
-                                    @csrf @method('PATCH')
-                                    <button class="btn btn-sm" style="background:#d4edda;color:#155724;">تفعيل</button>
-                                </form>
-                            @endif
-                            <form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('هل تريد حذف هذا المستخدم نهائيًا؟')">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-sm" style="background:#f5c6cb;color:#721c24;">حذف</button>
-                            </form>
+                        <td>
+                            <div style="display:flex;gap:6px;">
+                                <a href="{{ route('admin.users.show', $user) }}" class="btn btn-ghost btn-sm">عرض</a>
+                                @if($user->status === 'active')
+                                    <form method="POST" action="{{ route('admin.users.suspend', $user) }}" onsubmit="return confirm('هل تريد تعليق هذا المستخدم؟')">
+                                        @csrf @method('PATCH')
+                                        <button class="btn btn-sm" style="background:#f8d7da;color:#721c24;">تعليق</button>
+                                    </form>
+                                @else
+                                    <form method="POST" action="{{ route('admin.users.activate', $user) }}" onsubmit="return confirm('هل تريد تفعيل هذا المستخدم؟')">
+                                        @csrf @method('PATCH')
+                                        <button class="btn btn-sm" style="background:#d4edda;color:#155724;">تفعيل</button>
+                                    </form>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="7">
+                    <tr><td colspan="8">
                         <div class="empty-state">
                             <div class="empty-state-icon">👥</div>
                             <h3>لا يوجد مستخدمون</h3>
@@ -85,7 +92,7 @@
                 </tbody>
             </table>
         </div>
+    </div>
 
-        {{ $users->links() }}
-    </section>
+    {{ $users->links() }}
 @endsection

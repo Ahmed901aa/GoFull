@@ -4,46 +4,42 @@
 @section('page-title', 'إضافة موظف')
 
 @section('content')
-    <section class="page-card">
-        <h2 class="page-heading">موظف جديد</h2>
-        <p class="page-text">إنشاء حساب موظف جديد للوصول إلى لوحة التحكم.</p>
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">إنشاء حساب موظف جديد</span>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url('/admin/employees') }}">
+                @csrf
 
-        <form method="POST" action="{{ url('/admin/employees') }}" class="form-grid">
-            @csrf
+                <div class="form-group">
+                    <label class="form-label" for="name">اسم الموظف</label>
+                    <input id="name" name="name" type="text" class="form-control" value="{{ old('name') }}" required placeholder="أدخل اسم الموظف">
+                    @error('name') <p class="form-error">{{ $message }}</p> @enderror
+                </div>
 
-            <div class="field">
-                <label class="label" for="name">اسم الموظف</label>
-                <input id="name" name="name" type="text" class="input" required>
-            </div>
+                <div class="form-group">
+                    <label class="form-label" for="phone">رقم الجوال</label>
+                    <input id="phone" name="phone" type="tel" class="form-control" value="{{ old('phone') }}" required placeholder="09XXXXXXXX">
+                    @error('phone') <p class="form-error">{{ $message }}</p> @enderror
+                </div>
 
-            <div class="field">
-                <label class="label" for="email">البريد الإلكتروني</label>
-                <input id="email" name="email" type="email" class="input" required>
-            </div>
+                <div class="form-group">
+                    <label class="form-label" for="password">كلمة المرور</label>
+                    <input id="password" name="password" type="password" class="form-control" required minlength="8" placeholder="8 أحرف على الأقل">
+                    @error('password') <p class="form-error">{{ $message }}</p> @enderror
+                </div>
 
-            <div class="field">
-                <label class="label" for="role">الدور</label>
-                <select id="role" name="role" class="select" required>
-                    <option value="">اختر الدور</option>
-                    <option value="support">موظف دعم</option>
-                    <option value="supervisor">مشرف</option>
-                    <option value="manager">مدير</option>
-                </select>
-            </div>
+                <div class="form-group">
+                    <label class="form-label" for="password_confirmation">تأكيد كلمة المرور</label>
+                    <input id="password_confirmation" name="password_confirmation" type="password" class="form-control" required minlength="8" placeholder="أعد إدخال كلمة المرور">
+                </div>
 
-            <div class="field">
-                <label class="label" for="password">كلمة المرور</label>
-                <input id="password" name="password" type="password" class="input" required>
-            </div>
-
-            <div class="field field-full">
-                <label class="label" for="notes">ملاحظات</label>
-                <textarea id="notes" name="notes" class="textarea" placeholder="ملاحظات داخلية اختيارية"></textarea>
-            </div>
-
-            <div class="field field-full">
-                <button type="submit" class="btn btn-primary">إضافة موظف</button>
-            </div>
-        </form>
-    </section>
+                <div style="display:flex;gap:12px;margin-top:8px;">
+                    <button type="submit" class="btn btn-primary">إضافة الموظف</button>
+                    <a href="{{ route('admin.employees.index') }}" class="btn btn-secondary">إلغاء</a>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection

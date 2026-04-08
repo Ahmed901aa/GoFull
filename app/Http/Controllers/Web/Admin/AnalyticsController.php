@@ -26,16 +26,38 @@ class AnalyticsController extends Controller
         ->groupBy('date')->orderBy('date')->get();
 
         $topProviders = ProviderProfile::where('verification_status', 'approved')
-            ->where('total_ratings', '>', 0)
             ->with('user')
-            ->orderByDesc('average_rating')
+            ->withCount([
+                'serviceRequests as completed_orders' => fn($q) => $q->where('status', 'completed'),
+            ])
+            ->addSelect(['real_avg_rating' => DB::table('ratings')
+                ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->whereColumn('service_requests.provider_id', 'provider_profiles.id')
+                ->selectRaw('ROUND(AVG(ratings.rating), 1)')
+            ])
+            ->addSelect(['real_total_ratings' => DB::table('ratings')
+                ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->whereColumn('service_requests.provider_id', 'provider_profiles.id')
+                ->selectRaw('COUNT(*)')
+            ])
+            ->having('completed_orders', '>', 0)
+            ->orderByDesc('completed_orders')
             ->take(10)->get();
 
         $usersByRole = User::select('role', DB::raw('count(*) as total'))
             ->groupBy('role')->pluck('total', 'role');
 
+        $revenue = [
+            'total' => ServiceRequest::where('status', 'completed')->sum('total'),
+            'today' => ServiceRequest::where('status', 'completed')
+                ->whereDate('completed_at', today())->sum('total'),
+            'this_month' => ServiceRequest::where('status', 'completed')
+                ->whereMonth('completed_at', now()->month)
+                ->whereYear('completed_at', now()->year)->sum('total'),
+        ];
+
         return view('admin.analytics.index', compact(
-            'byStatus', 'byType', 'perDay', 'topProviders', 'usersByRole'
+            'byStatus', 'byType', 'perDay', 'topProviders', 'usersByRole', 'revenue'
         ));
     }
 }

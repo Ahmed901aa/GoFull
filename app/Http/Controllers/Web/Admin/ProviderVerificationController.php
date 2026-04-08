@@ -8,6 +8,7 @@ use App\Models\ProviderProfile;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProviderVerificationController extends Controller
 {
@@ -17,6 +18,22 @@ class ProviderVerificationController extends Controller
 
         $providers = ProviderProfile::where('verification_status', $status)
             ->with(['user', 'documents'])
+            ->withCount([
+                'serviceRequests as completed_orders' => fn($q) => $q->where('status', 'completed'),
+                'serviceRequests as cancelled_orders' => fn($q) => $q->where('status', 'cancelled'),
+                'serviceRequests as total_orders',
+            ])
+            // Real rating from ratings table
+            ->addSelect(['real_avg_rating' => DB::table('ratings')
+                ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->whereColumn('service_requests.provider_id', 'provider_profiles.id')
+                ->selectRaw('ROUND(AVG(ratings.rating), 1)')
+            ])
+            ->addSelect(['real_total_ratings' => DB::table('ratings')
+                ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->whereColumn('service_requests.provider_id', 'provider_profiles.id')
+                ->selectRaw('COUNT(*)')
+            ])
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -34,7 +51,30 @@ class ProviderVerificationController extends Controller
     public function show(ProviderProfile $provider)
     {
         $provider->load(['user', 'documents', 'verifiedBy']);
-        return view('admin.providers.show', compact('provider'));
+        $provider->loadCount([
+            'serviceRequests as completed_orders' => fn($q) => $q->where('status', 'completed'),
+            'serviceRequests as cancelled_orders' => fn($q) => $q->where('status', 'cancelled'),
+            'serviceRequests as total_orders',
+        ]);
+
+        // Real rating computed from ratings table
+        $ratingStats = DB::table('ratings')
+            ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+            ->where('service_requests.provider_id', $provider->id)
+            ->selectRaw('ROUND(AVG(ratings.rating), 1) as avg_rating, COUNT(*) as total_ratings')
+            ->first();
+
+        $provider->real_avg_rating = $ratingStats->avg_rating ?? 0;
+        $provider->real_total_ratings = $ratingStats->total_ratings ?? 0;
+
+        $totalRevenue = $provider->serviceRequests()->where('status', 'completed')->sum('total');
+        $recentOrders = $provider->serviceRequests()
+            ->with(['driver', 'rating'])
+            ->latest()
+            ->take(10)
+            ->get();
+
+        return view('admin.providers.show', compact('provider', 'totalRevenue', 'recentOrders'));
     }
 
     public function setAppointment(SetAppointmentRequest $request, ProviderProfile $provider)

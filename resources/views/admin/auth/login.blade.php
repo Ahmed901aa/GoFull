@@ -20,7 +20,7 @@
 <body>
 <div class="login-wrap">
     <div class="login-logo">
-        <div class="login-logo-icon">⛽</div>
+        <img src="{{ asset('images/logo.png') }}" alt="GoFull" style="width:64px;height:64px;border-radius:12px;object-fit:contain;display:block;margin:0 auto 12px;">
         <div class="login-logo-text">Go<span>Full</span> لوحة التحكم</div>
         <div class="login-sub">تسجيل الدخول إلى لوحة التحكم</div>
     </div>

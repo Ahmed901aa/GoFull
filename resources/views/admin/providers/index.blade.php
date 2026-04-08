@@ -4,30 +4,27 @@
 @section('page-title', 'توثيق مزودي الخدمة')
 
 @section('content')
-    <section class="page-card">
-        <h2 class="page-heading">مزودو الخدمة</h2>
-        <p class="page-text">مراجعة وتوثيق حسابات مزودي الخدمة.</p>
+    {{-- Status Tabs --}}
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+        @php
+            $tabs = [
+                'pending'         => ['label' => 'بانتظار التوثيق', 'icon' => '⏳'],
+                'appointment_set' => ['label' => 'موعد محدد',       'icon' => '📅'],
+                'approved'        => ['label' => 'معتمد',           'icon' => '✅'],
+                'rejected'        => ['label' => 'مرفوض',           'icon' => '❌'],
+            ];
+        @endphp
+        @foreach($tabs as $key => $tab)
+            <a href="{{ route('admin.providers.index', ['status' => $key]) }}"
+               class="btn btn-sm {{ $status === $key ? 'btn-primary' : 'btn-secondary' }}">
+                {{ $tab['icon'] }} {{ $tab['label'] }} ({{ $counts[$key] ?? 0 }})
+            </a>
+        @endforeach
+    </div>
 
-        {{-- Status Tabs --}}
-        <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
-            @php
-                $tabs = [
-                    'pending'         => ['label' => 'بانتظار التوثيق', 'icon' => '⏳'],
-                    'appointment_set' => ['label' => 'موعد محدد',       'icon' => '📅'],
-                    'approved'        => ['label' => 'معتمد',           'icon' => '✅'],
-                    'rejected'        => ['label' => 'مرفوض',           'icon' => '❌'],
-                ];
-            @endphp
-            @foreach($tabs as $key => $tab)
-                <a href="{{ route('admin.providers.index', ['status' => $key]) }}"
-                   class="btn btn-sm {{ $status === $key ? 'btn-primary' : 'btn-ghost' }}">
-                    {{ $tab['icon'] }} {{ $tab['label'] }} ({{ $counts[$key] ?? 0 }})
-                </a>
-            @endforeach
-        </div>
-
-        <div class="table-wrap">
-            <table class="table">
+    <div class="card">
+        <div class="table-wrapper">
+            <table>
                 <thead>
                     <tr>
                         <th>#</th>
@@ -35,6 +32,7 @@
                         <th>الهاتف</th>
                         <th>نوع الخدمة</th>
                         <th>المركبة</th>
+                        <th>الطلبات المكتملة</th>
                         <th>التقييم</th>
                         <th>الحالة</th>
                         <th>إجراءات</th>
@@ -50,35 +48,62 @@
                             'rejected'        => ['label' => 'مرفوض',           'bg' => '#f8d7da', 'fg' => '#721c24'],
                         ];
                         $s = $statusLabels[$provider->verification_status] ?? ['label' => $provider->verification_status, 'bg' => '#eee', 'fg' => '#333'];
+                        $completionRate = $provider->total_orders > 0
+                            ? round(($provider->completed_orders / $provider->total_orders) * 100)
+                            : 0;
                     @endphp
                     <tr>
                         <td class="td-muted td-mono">#{{ $provider->id }}</td>
-                        <td>{{ $provider->user->name ?? '—' }}</td>
+                        <td>
+                            <a href="{{ route('admin.providers.show', $provider) }}" style="font-weight:600;color:var(--primary);">
+                                {{ $provider->user->name ?? '—' }}
+                            </a>
+                        </td>
                         <td class="td-muted" dir="ltr">{{ $provider->user->phone ?? '—' }}</td>
                         <td>
                             <span class="badge badge-primary">
                                 {{ $provider->service_type === 'fuel_delivery' ? '⛽ وقود' : '🚛 سحب' }}
                             </span>
                         </td>
-                        <td class="td-muted">{{ $provider->vehicle_make }} {{ $provider->vehicle_model }} — {{ $provider->vehicle_plate }}</td>
-                        <td>{{ $provider->total_ratings > 0 ? number_format($provider->average_rating, 1) . ' ⭐' : '—' }}</td>
-                        <td><span class="badge" style="background:{{ $s['bg'] }};color:{{ $s['fg'] }};">{{ $s['label'] }}</span></td>
-                        <td style="display:flex;gap:6px;flex-wrap:wrap;">
-                            @if($provider->verification_status === 'pending' || $provider->verification_status === 'appointment_set')
-                                <form method="POST" action="{{ route('admin.providers.approve', $provider) }}" onsubmit="return confirm('هل تريد اعتماد هذا المزود؟')">
-                                    @csrf @method('PATCH')
-                                    <button class="btn btn-sm" style="background:#d4edda;color:#155724;">اعتماد</button>
-                                </form>
-                                <form method="POST" action="{{ route('admin.providers.reject', $provider) }}" onsubmit="return confirm('هل تريد رفض هذا المزود؟')">
-                                    @csrf @method('PATCH')
-                                    <input type="hidden" name="rejection_reason" value="لم يستوفِ الشروط المطلوبة">
-                                    <button class="btn btn-sm" style="background:#f8d7da;color:#721c24;">رفض</button>
-                                </form>
+                        <td class="td-muted" style="font-size:12px;">{{ $provider->vehicle_make }} {{ $provider->vehicle_model }} — {{ $provider->vehicle_plate }}</td>
+                        <td>
+                            <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-weight:700;">
+                                {{ $provider->completed_orders }}
+                            </span>
+                            @if($provider->total_orders > 0)
+                                <span style="font-size:11px;color:var(--text-muted);margin-right:4px;">
+                                    ({{ $completionRate }}%)
+                                </span>
                             @endif
+                        </td>
+                        <td>
+                            @if(($provider->real_total_ratings ?? 0) > 0)
+                                <span style="font-weight:700;color:#e65100;">{{ number_format($provider->real_avg_rating, 1) }}</span>
+                                <span style="font-size:11px;color:var(--text-muted);">⭐ ({{ $provider->real_total_ratings }})</span>
+                            @else
+                                <span class="td-muted">—</span>
+                            @endif
+                        </td>
+                        <td><span class="badge" style="background:{{ $s['bg'] }};color:{{ $s['fg'] }};">{{ $s['label'] }}</span></td>
+                        <td>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                <a href="{{ route('admin.providers.show', $provider) }}" class="btn btn-ghost btn-sm">عرض</a>
+                                @if($provider->verification_status === 'pending' || $provider->verification_status === 'appointment_set')
+                                    <form method="POST" action="{{ route('admin.providers.approve', $provider) }}" onsubmit="return confirm('هل تريد اعتماد هذا المزود؟')">
+                                        @csrf @method('PATCH')
+                                        <button class="btn btn-sm" style="background:#d4edda;color:#155724;">اعتماد</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('admin.providers.reject', $provider) }}" onsubmit="return confirm('هل تريد رفض هذا المزود؟')">
+                                        @csrf @method('PATCH')
+                                        <input type="hidden" name="rejection_reason" value="لم يستوفِ الشروط المطلوبة">
+                                        <button class="btn btn-sm" style="background:#f8d7da;color:#721c24;">رفض</button>
+                                    </form>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="8">
+                    <tr><td colspan="9">
                         <div class="empty-state">
                             <div class="empty-state-icon">🚗</div>
                             <h3>لا يوجد مزودو خدمة في هذه الحالة</h3>
@@ -88,7 +113,7 @@
                 </tbody>
             </table>
         </div>
+    </div>
 
-        {{ $providers->links() }}
-    </section>
+    {{ $providers->links() }}
 @endsection

@@ -4,9 +4,17 @@
 @section('page-title', 'المراقبة المباشرة')
 
 @section('content')
-    <section class="page-card">
-        <h2 class="page-heading">الطلبات النشطة</h2>
-        <p class="page-text">مراقبة جميع الطلبات الجارية حاليًا في النظام.</p>
+    <section class="page-card" id="monitor-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div>
+                <h2 class="page-heading" style="margin:0;">الطلبات النشطة</h2>
+                <p class="page-text" style="margin:4px 0 0;">مراقبة جميع الطلبات الجارية حاليًا في النظام.</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;animation:pulse 2s infinite;"></span>
+                <span id="monitor-indicator" style="font-size:12px;color:#999;">مباشر</span>
+            </div>
+        </div>
 
         @php
             $statusMap = [
@@ -66,3 +74,30 @@
         {{ $requests->links() }}
     </section>
 @endsection
+
+@push('styles')
+<style>
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script>
+    setInterval(() => {
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const fresh = doc.getElementById('monitor-content');
+                if (fresh) {
+                    document.getElementById('monitor-content').innerHTML = fresh.innerHTML;
+                }
+            })
+            .catch(() => {});
+    }, 5000);
+</script>
+@endpush

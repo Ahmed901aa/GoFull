@@ -10,7 +10,12 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::whereIn('role', ['driver', 'provider'])->with('providerProfile');
+        $query = User::whereIn('role', ['driver', 'provider'])
+            ->with('providerProfile')
+            ->withCount([
+                'serviceRequests as completed_orders_count' => fn($q) => $q->where('status', 'completed'),
+                'serviceRequests as total_orders_count',
+            ]);
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {

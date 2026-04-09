@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\AppSetting;
 use App\Models\Banner;
 use App\Models\FuelPrice;
+use App\Models\ProviderProfile;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;

@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/requests',                             [RequestController::class, 'index']);
         Route::get('/requests/active',                      [RequestController::class, 'getActive']);
         Route::get('/requests/history',                     [RequestController::class, 'history']);
+        Route::get('/requests/{request}',                   [RequestController::class, 'show']);
         Route::patch('/requests/{request}/accept',          [RequestController::class, 'accept']);
         Route::patch('/requests/{request}/reject',          [RequestController::class, 'reject']);
         Route::patch('/requests/{serviceRequest}/status',    [RequestController::class, 'updateStatus']);

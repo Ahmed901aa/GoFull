@@ -3,6 +3,7 @@
 use App\Http\Controllers\Web\Admin\AnalyticsController;
 use App\Http\Controllers\Web\Admin\DashboardController;
 use App\Http\Controllers\Web\Admin\EmployeeController;
+use App\Http\Controllers\Web\Admin\FuelPriceController;
 use App\Http\Controllers\Web\Admin\ProviderVerificationController;
 use App\Http\Controllers\Web\Admin\ServiceMonitorController;
 use App\Http\Controllers\Web\Admin\UserController;
@@ -39,6 +40,9 @@ Route::middleware(['auth', 'role:admin,employee'])->prefix('admin')->name('admin
         Route::delete('/users/{user}',         [UserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+        Route::get('/fuel-prices',                  [FuelPriceController::class, 'index'])->name('fuel_prices.index');
+        Route::patch('/fuel-prices/{fuelPrice}',    [FuelPriceController::class, 'update'])->name('fuel_prices.update');
 
         Route::get('/employees',           [EmployeeController::class, 'index'])->name('employees.index');
         Route::get('/employees/create',    [EmployeeController::class, 'create'])->name('employees.create');

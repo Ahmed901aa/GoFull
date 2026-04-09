@@ -63,6 +63,14 @@
             التحليلات
         </a>
 
+        <a href="{{ route('admin.fuel_prices.index') }}"
+           class="nav-item {{ request()->routeIs('admin.fuel_prices*') ? 'active' : '' }}">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M5 21V7a2 2 0 012-2h6a2 2 0 012 2v14M5 21h10M5 21H3m12 0h6a2 2 0 002-2v-5a2 2 0 00-2-2h-1a2 2 0 00-2 2v5m0-12V5a2 2 0 012-2h0a2 2 0 012 2v7"/>
+            </svg>
+            أسعار الوقود
+        </a>
+
         <a href="{{ route('admin.employees.index') }}"
            class="nav-item {{ request()->routeIs('admin.employees*') ? 'active' : '' }}">
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

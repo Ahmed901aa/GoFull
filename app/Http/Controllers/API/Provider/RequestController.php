@@ -22,6 +22,22 @@ class RequestController extends Controller
         return response()->json(['success' => true, 'data' => $requests]);
     }
 
+    public function show(ServiceRequest $request): JsonResponse
+    {
+        $provider = auth()->user()->providerProfile;
+
+        if ($request->provider_id !== $provider->id) {
+            return response()->json(['success' => false, 'message' => 'Request not found.'], 404);
+        }
+
+        $request->load(['driver', 'rating']);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $request,
+        ]);
+    }
+
     public function accept(ServiceRequest $request): JsonResponse
     {
         $provider = auth()->user()->providerProfile;
@@ -65,7 +81,7 @@ class RequestController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Request accepted successfully.',
-            'data'    => $request->load(['driver', 'provider']),
+            'data'    => $request->load(['driver', 'provider.user']),
         ]);
     }
 
@@ -75,7 +91,7 @@ class RequestController extends Controller
 
         $activeRequest = ServiceRequest::where('provider_id', $provider->id)
             ->whereIn('status', ['accepted', 'en_route', 'arrived', 'in_progress'])
-            ->with(['driver', 'provider'])
+            ->with(['driver', 'provider.user'])
             ->latest()
             ->first();
 

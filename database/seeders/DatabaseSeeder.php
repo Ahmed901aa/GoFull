@@ -27,6 +27,44 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // ── Test Provider (Driver App) — Ibrahim Saleh ──────
+        $ibrahim = User::query()->updateOrCreate(
+            ['phone' => '0923663333'],
+            [
+                'name' => 'ابراهيم صالح',
+                'password' => '12345678',
+                'role' => 'provider',
+                'status' => 'active',
+            ]
+        );
+        ProviderProfile::query()->updateOrCreate(
+            ['user_id' => $ibrahim->id],
+            [
+                'service_type'        => 'fuel_delivery',
+                'vehicle_make'        => 'تويوتا',
+                'vehicle_model'       => 'هايلكس',
+                'vehicle_year'        => 2022,
+                'vehicle_plate'       => 'أ ب م 1234',
+                'vehicle_color'       => 'أبيض',
+                'is_available'        => true,
+                'verification_status' => 'approved',
+                'verified_at'         => now(),
+                'average_rating'      => 0,
+                'total_ratings'       => 0,
+            ]
+        );
+
+        // ── Test Customer (Customer App) ─────────────────────
+        User::query()->updateOrCreate(
+            ['phone' => '0911111111'],
+            [
+                'name' => 'عميل تجريبي',
+                'password' => '12345678',
+                'role' => 'driver',
+                'status' => 'active',
+            ]
+        );
+
         // ── Fuel Prices ──────────────────────────────────────
         FuelPrice::updateOrCreate(
             ['fuel_type' => 'petrol', 'name_ar' => 'بنزين'],

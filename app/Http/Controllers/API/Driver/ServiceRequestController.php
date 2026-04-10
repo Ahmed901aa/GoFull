@@ -143,6 +143,26 @@ class ServiceRequestController extends Controller
         ], 201);
     }
 
+    /**
+     * GET /driver/requests/unrated
+     * Returns the latest completed order that hasn't been rated by the customer.
+     */
+    public function unrated(): JsonResponse
+    {
+        $order = auth()->user()
+            ->serviceRequests()
+            ->where('status', 'completed')
+            ->whereDoesntHave('rating')
+            ->with('provider.user')
+            ->latest('completed_at')
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $order,
+        ]);
+    }
+
     public function show(ServiceRequest $request): JsonResponse
     {
         if ($request->driver_id !== auth()->id()) {

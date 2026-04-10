@@ -32,11 +32,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Driver
     Route::middleware('role:driver')->prefix('driver')->group(function () {
         Route::get('/requests',                    [ServiceRequestController::class, 'index']);
+        Route::get('/requests/unrated',            [ServiceRequestController::class, 'unrated']);
         Route::post('/requests/fuel',              [ServiceRequestController::class, 'storeFuel']);
         Route::post('/requests/towing',            [ServiceRequestController::class, 'storeTowing']);
         Route::get('/requests/{request}',          [ServiceRequestController::class, 'show']);
         Route::patch('/requests/{request}/cancel', [ServiceRequestController::class, 'cancel']);
-        Route::post('/requests/{request}/rate',    [RatingController::class, 'store']);
+        Route::post('/requests/{serviceRequest}/rate', [RatingController::class, 'store']);
     });
 
     // Provider

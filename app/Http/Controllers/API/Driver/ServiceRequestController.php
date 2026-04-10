@@ -161,10 +161,12 @@ class ServiceRequestController extends Controller
             return response()->json(['success' => false, 'message' => 'Request not found.'], 404);
         }
 
-        if (! $request->isActive()) {
+        // Only pending requests can be cancelled. Once a provider has
+        // accepted, the customer must let the service proceed.
+        if ($request->status !== 'pending') {
             return response()->json([
                 'success' => false,
-                'message' => 'Only active requests can be cancelled.',
+                'message' => 'لا يمكن إلغاء الطلب بعد قبوله من قبل مزود الخدمة.',
             ], 422);
         }
 

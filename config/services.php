@@ -41,8 +41,4 @@ return [
         'group_id'  => env('ISEND_GROUP_ID', ''),
     ],
 
-    'fcm' => [
-        'server_key' => env('FCM_SERVER_KEY'),
-    ],
-
 ];

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Web\Admin\AnalyticsController;
 use App\Http\Controllers\Web\Admin\DashboardController;
+use App\Http\Controllers\Web\Admin\DriverIncomeController;
 use App\Http\Controllers\Web\Admin\EmployeeController;
 use App\Http\Controllers\Web\Admin\FuelPriceController;
 use App\Http\Controllers\Web\Admin\ProviderVerificationController;
@@ -27,6 +28,9 @@ Route::middleware(['auth', 'role:admin,employee'])->prefix('admin')->name('admin
     Route::patch('/providers/{provider}/appointment', [ProviderVerificationController::class, 'setAppointment'])->name('providers.appointment');
     Route::patch('/providers/{provider}/approve',     [ProviderVerificationController::class, 'approve'])->name('providers.approve');
     Route::patch('/providers/{provider}/reject',      [ProviderVerificationController::class, 'reject'])->name('providers.reject');
+
+    Route::get('/income',          [DriverIncomeController::class, 'index'])->name('income.index');
+    Route::get('/income/{driver}', [DriverIncomeController::class, 'show'])->name('income.show');
 
     Route::get('/monitor',           [ServiceMonitorController::class, 'index'])->name('monitor.index');
     Route::get('/monitor/{request}', [ServiceMonitorController::class, 'show'])->name('monitor.show');

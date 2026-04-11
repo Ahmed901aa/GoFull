@@ -19,10 +19,13 @@ class ProfileController extends Controller
 
         $profile->load('documents');
 
+        $completedOrders = $profile->serviceRequests()->where('status', 'completed')->count();
+
         return response()->json([
             'success' => true,
             'data'    => [
-                'id'                  => $user->id,
+                'id'                  => $profile->id,
+                'user_id'             => $user->id,
                 'name'                => $user->name,
                 'phone'               => $user->phone,
                 'role'                => $user->role,
@@ -36,6 +39,7 @@ class ProfileController extends Controller
                 'verification_status' => $profile->verification_status,
                 'average_rating'      => $profile->average_rating,
                 'total_ratings'       => $profile->total_ratings,
+                'completed_orders'    => $completedOrders,
                 'created_at'          => $profile->created_at,
                 'documents'           => $profile->documents->map(fn ($doc) => [
                     'id'   => $doc->id,

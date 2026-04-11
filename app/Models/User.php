@@ -77,6 +77,12 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
+    // السائق له مركبة واحدة
+    public function vehicle()
+    {
+        return $this->hasOne(DriverVehicle::class, 'driver_id');
+    }
+
     // Admin/Employee وثّق providers
     public function verifiedProviders()
     {

@@ -2,13 +2,16 @@
 
 use App\Http\Controllers\API\AppSettingController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\Driver\IncomeController;
 use App\Http\Controllers\API\Driver\RatingController;
 use App\Http\Controllers\API\Driver\ServiceRequestController;
+use App\Http\Controllers\API\Driver\VehicleController;
 use App\Http\Controllers\API\FuelPriceController;
 use App\Http\Controllers\API\HomeController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\ProfileController as UserProfileController;
 use App\Http\Controllers\API\Provider\ProfileController;
+use App\Http\Controllers\API\Provider\AnalyticsController;
 use App\Http\Controllers\API\Provider\RequestController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,6 +41,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/requests/{request}',          [ServiceRequestController::class, 'show']);
         Route::patch('/requests/{request}/cancel', [ServiceRequestController::class, 'cancel']);
         Route::post('/requests/{serviceRequest}/rate', [RatingController::class, 'store']);
+
+        Route::get('/vehicle',  [VehicleController::class, 'show']);
+        Route::post('/vehicle', [VehicleController::class, 'store']);
+
+        Route::get('/income', [IncomeController::class, 'summary']);
     });
 
     // Provider
@@ -53,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/requests/{request}/reject',          [RequestController::class, 'reject']);
         Route::patch('/requests/{serviceRequest}/status',    [RequestController::class, 'updateStatus']);
         Route::post('/requests/{serviceRequest}/rate',      [RequestController::class, 'rateCustomer']);
+        Route::get('/analytics',                               [AnalyticsController::class, 'summary']);
     });
 
     // Shared

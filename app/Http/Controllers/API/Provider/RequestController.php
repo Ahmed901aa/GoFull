@@ -152,7 +152,21 @@ class RequestController extends Controller
             return response()->json(['success' => false, 'message' => 'Only pending requests can be rejected.'], 422);
         }
 
-        return response()->json(['success' => true, 'message' => 'Request rejected.']);
+        $request->update([
+            'status'       => 'cancelled',
+            'cancelled_at' => now(),
+            'cancelled_by' => 'provider',
+            'cancellation_reason' => 'تم الرفض من قبل مزود الخدمة',
+        ]);
+
+        NotificationService::send(
+            $request->driver,
+            'Request Rejected',
+            'A provider has declined your request. We are looking for another provider.',
+            ['request_id' => $request->id, 'status' => 'cancelled']
+        );
+
+        return response()->json(['success' => true, 'message' => 'Request rejected successfully.']);
     }
 
     public function updateStatus(UpdateStatusRequest $request, ServiceRequest $serviceRequest): JsonResponse

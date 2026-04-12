@@ -24,7 +24,29 @@ class ProfileController extends Controller
         ];
 
         if ($user->role === 'provider') {
-            $data['provider_profile'] = $user->providerProfile?->load('documents');
+            $profile = $user->providerProfile;
+            $data['provider_profile'] = $profile?->load('documents');
+
+            if ($profile) {
+                $completedOrders = $profile->serviceRequests()->where('status', 'completed')->count();
+
+                // حساب متوسط التقييم الذي حصل عليه مزود الخدمة من السائقين
+                $ratingStats = Rating::whereHas('serviceRequest', function ($q) use ($profile) {
+                    $q->where('provider_id', $profile->id)
+                        ->where('status', 'completed');
+                })->selectRaw('ROUND(AVG(rating), 1) as avg_rating, COUNT(*) as total_ratings')
+                    ->first();
+
+                $data['completed_orders'] = $completedOrders;
+                $data['average_rating'] = $ratingStats->avg_rating ?? 0;
+                $data['total_ratings'] = $ratingStats->total_ratings ?? 0;
+                $data['service_type'] = $profile->service_type;
+                $data['vehicle_make'] = $profile->vehicle_make;
+                $data['vehicle_model'] = $profile->vehicle_model;
+                $data['vehicle_plate'] = $profile->vehicle_plate;
+                $data['is_available'] = $profile->is_available;
+                $data['verification_status'] = $profile->verification_status;
+            }
         }
 
         if ($user->role === 'driver') {
@@ -57,7 +79,7 @@ class ProfileController extends Controller
     {
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
-            'phone' => 'sometimes|string|unique:users,phone,' . $request->user()->id,
+            'phone' => 'sometimes|string|unique:users,phone,'.$request->user()->id,
         ]);
 
         $request->user()->update($validated);

@@ -24,6 +24,7 @@ class ServiceRequest extends Model
         'fuel_type',
         'fuel_quantity',
         'plate_number',
+        'car_type',
         'accepted_at',
         'arrived_at',
         'completed_at',
@@ -39,19 +40,19 @@ class ServiceRequest extends Model
     ];
 
     protected $casts = [
-        'driver_latitude'       => 'decimal:8',
-        'driver_longitude'      => 'decimal:8',
-        'destination_latitude'  => 'decimal:8',
+        'driver_latitude' => 'decimal:8',
+        'driver_longitude' => 'decimal:8',
+        'destination_latitude' => 'decimal:8',
         'destination_longitude' => 'decimal:8',
-        'fuel_quantity'    => 'decimal:2',
-        'price_per_liter'  => 'decimal:2',
-        'subtotal'         => 'decimal:2',
-        'service_fee'      => 'decimal:2',
-        'total'            => 'decimal:2',
-        'accepted_at'      => 'datetime',
-        'arrived_at'       => 'datetime',
-        'completed_at'     => 'datetime',
-        'cancelled_at'     => 'datetime',
+        'fuel_quantity' => 'decimal:2',
+        'price_per_liter' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'service_fee' => 'decimal:2',
+        'total' => 'decimal:2',
+        'accepted_at' => 'datetime',
+        'arrived_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     // ========== Helpers ==========

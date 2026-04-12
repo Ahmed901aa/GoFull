@@ -13,6 +13,10 @@ class AnalyticsController extends Controller
     {
         $provider = auth()->user()->providerProfile;
 
+        if (! $provider) {
+            return response()->json(['success' => false, 'message' => 'Provider profile not found.'], 404);
+        }
+
         $completedQuery = ServiceRequest::where('provider_id', $provider->id)
             ->where('status', 'completed');
 
@@ -59,8 +63,8 @@ class AnalyticsController extends Controller
                 ->count();
 
             $weeklyOrders[] = [
-                'day'   => $dayLabels[$date->dayOfWeek],
-                'date'  => $date->toDateString(),
+                'day' => $dayLabels[$date->dayOfWeek],
+                'date' => $date->toDateString(),
                 'count' => $count,
             ];
         }
@@ -80,7 +84,7 @@ class AnalyticsController extends Controller
                 ->count();
 
             $weeklyAcceptance[] = [
-                'day'  => $dayLabels[$date->dayOfWeek],
+                'day' => $dayLabels[$date->dayOfWeek],
                 'date' => $date->toDateString(),
                 'rate' => $total > 0 ? round(($accepted / $total) * 100) : 0,
             ];
@@ -97,17 +101,17 @@ class AnalyticsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'total_orders'       => $totalOrders,
-                'total_income'       => round($totalIncome, 2),
-                'today_orders'       => $todayOrders,
-                'today_income'       => round($todayIncome, 2),
-                'orders_change'      => $ordersChange,
-                'income_change'      => $incomeChange,
-                'average_rating'     => $averageRating,
-                'total_ratings'      => $totalRatings,
-                'weekly_orders'      => $weeklyOrders,
-                'weekly_acceptance'  => $weeklyAcceptance,
+            'data' => [
+                'total_orders' => $totalOrders,
+                'total_income' => round($totalIncome, 2),
+                'today_orders' => $todayOrders,
+                'today_income' => round($todayIncome, 2),
+                'orders_change' => $ordersChange,
+                'income_change' => $incomeChange,
+                'average_rating' => $averageRating,
+                'total_ratings' => $totalRatings,
+                'weekly_orders' => $weeklyOrders,
+                'weekly_acceptance' => $weeklyAcceptance,
             ],
         ]);
     }

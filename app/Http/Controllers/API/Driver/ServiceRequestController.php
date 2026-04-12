@@ -50,19 +50,19 @@ class ServiceRequestController extends Controller
         $total = round($subtotal + $serviceFee, 2);
 
         $serviceRequest = ServiceRequest::create([
-            'driver_id'        => auth()->id(),
-            'service_type'     => 'fuel_delivery',
-            'status'           => 'pending',
-            'driver_latitude'  => $data['driver_latitude'],
+            'driver_id' => auth()->id(),
+            'service_type' => 'fuel_delivery',
+            'status' => 'pending',
+            'driver_latitude' => $data['driver_latitude'],
             'driver_longitude' => $data['driver_longitude'],
-            'driver_address'   => $data['driver_address'] ?? null,
-            'fuel_type'        => $data['fuel_type'],
-            'fuel_quantity'    => $data['fuel_quantity'],
-            'price_per_liter'  => $pricePerLiter,
-            'subtotal'         => $subtotal,
-            'service_fee'      => $serviceFee,
-            'total'            => $total,
-            'notes'            => $data['notes'] ?? null,
+            'driver_address' => $data['driver_address'] ?? null,
+            'fuel_type' => $data['fuel_type'],
+            'fuel_quantity' => $data['fuel_quantity'],
+            'price_per_liter' => $pricePerLiter,
+            'subtotal' => $subtotal,
+            'service_fee' => $serviceFee,
+            'total' => $total,
+            'notes' => $data['notes'] ?? null,
         ]);
 
         $providers = ProviderProfile::where('service_type', 'fuel_delivery')
@@ -81,7 +81,7 @@ class ServiceRequestController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Fuel delivery request created. Waiting for a provider to accept.',
-            'data'    => $serviceRequest->load('driver'),
+            'data' => $serviceRequest->load('driver'),
         ], 201);
     }
 
@@ -107,20 +107,21 @@ class ServiceRequestController extends Controller
         $total = round($towingBasePrice + $serviceFee, 2);
 
         $serviceRequest = ServiceRequest::create([
-            'driver_id'              => auth()->id(),
-            'service_type'           => 'towing',
-            'status'                 => 'pending',
-            'driver_latitude'        => $data['driver_latitude'],
-            'driver_longitude'       => $data['driver_longitude'],
-            'driver_address'         => $data['driver_address'] ?? null,
-            'destination_latitude'   => $data['destination_latitude'] ?? null,
-            'destination_longitude'  => $data['destination_longitude'] ?? null,
-            'destination_address'    => $data['destination_address'] ?? null,
-            'plate_number'           => $data['plate_number'],
-            'subtotal'               => $towingBasePrice,
-            'service_fee'            => $serviceFee,
-            'total'                  => $total,
-            'notes'                  => $data['notes'] ?? null,
+            'driver_id' => auth()->id(),
+            'service_type' => 'towing',
+            'status' => 'pending',
+            'driver_latitude' => $data['driver_latitude'],
+            'driver_longitude' => $data['driver_longitude'],
+            'driver_address' => $data['driver_address'] ?? null,
+            'destination_latitude' => $data['destination_latitude'] ?? null,
+            'destination_longitude' => $data['destination_longitude'] ?? null,
+            'destination_address' => $data['destination_address'] ?? null,
+            'plate_number' => $data['plate_number'],
+            'car_type' => $data['car_type'] ?? null,
+            'subtotal' => $towingBasePrice,
+            'service_fee' => $serviceFee,
+            'total' => $total,
+            'notes' => $data['notes'] ?? null,
         ]);
 
         $providers = ProviderProfile::where('service_type', 'towing')
@@ -139,7 +140,7 @@ class ServiceRequestController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Towing request created. Waiting for a provider to accept.',
-            'data'    => $serviceRequest->load('driver'),
+            'data' => $serviceRequest->load('driver'),
         ], 201);
     }
 
@@ -159,7 +160,7 @@ class ServiceRequestController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $order,
+            'data' => $order,
         ]);
     }
 
@@ -171,7 +172,7 @@ class ServiceRequestController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $request->load(['driver', 'provider.user', 'rating']),
+            'data' => $request->load(['driver', 'provider.user', 'rating']),
         ]);
     }
 
@@ -191,9 +192,9 @@ class ServiceRequestController extends Controller
         }
 
         $request->update([
-            'status'              => 'cancelled',
-            'cancelled_by'        => 'driver',
-            'cancelled_at'        => now(),
+            'status' => 'cancelled',
+            'cancelled_by' => 'driver',
+            'cancelled_at' => now(),
             'cancellation_reason' => 'Cancelled by driver.',
         ]);
 

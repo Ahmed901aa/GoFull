@@ -8,25 +8,25 @@
         <span class="card-title">{{ $driver->name }}</span>
         <a href="{{ route('admin.income.index') }}" class="btn btn-ghost btn-sm">→ رجوع</a>
     </div>
-    <div style="padding:20px;display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;">
+    <div style="padding:20px;display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:20px;">
         <div>
-            <div class="stat-label">الهاتف</div>
-            <div style="font-weight:600;" dir="ltr">{{ $driver->phone }}</div>
+            <div class="stat-label" style="margin-bottom:4px;">الهاتف</div>
+            <div style="font-weight:600;font-size:15px;" dir="ltr">{{ $driver->phone }}</div>
         </div>
         <div>
-            <div class="stat-label">نوع المركبة</div>
-            <div style="font-weight:600;">
+            <div class="stat-label" style="margin-bottom:4px;">نوع المركبة</div>
+            <div style="font-weight:600;font-size:15px;">
                 {{ $driver->vehicle?->vehicle_type ?? 'لم يتم التسجيل' }}
             </div>
         </div>
         <div>
-            <div class="stat-label">رقم اللوحة</div>
-            <div style="font-weight:600;" dir="ltr">
+            <div class="stat-label" style="margin-bottom:4px;">رقم اللوحة</div>
+            <div style="font-weight:600;font-size:15px;" dir="ltr">
                 {{ $driver->vehicle?->license_plate ?? '—' }}
             </div>
         </div>
         <div>
-            <div class="stat-label">الحالة</div>
+            <div class="stat-label" style="margin-bottom:4px;">الحالة</div>
             <div>
                 @if($driver->status === 'active')
                     <span class="badge" style="background:#e8f5e9;color:#2e7d32;">نشط</span>
@@ -115,11 +115,7 @@
         </table>
     </div>
 
-    @if($orders->hasPages())
-    <div style="padding:16px;display:flex;justify-content:center;">
-        {{ $orders->links() }}
-    </div>
-    @endif
+    {{ $orders->links() }}
 </div>
 
 @endsection

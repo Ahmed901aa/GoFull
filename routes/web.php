@@ -4,6 +4,7 @@ use App\Http\Controllers\Web\Admin\AnalyticsController;
 use App\Http\Controllers\Web\Admin\DashboardController;
 use App\Http\Controllers\Web\Admin\DriverIncomeController;
 use App\Http\Controllers\Web\Admin\EmployeeController;
+use App\Http\Controllers\Web\Admin\AppSettingController as AdminSettingController;
 use App\Http\Controllers\Web\Admin\FuelPriceController;
 use App\Http\Controllers\Web\Admin\ProviderVerificationController;
 use App\Http\Controllers\Web\Admin\ServiceMonitorController;
@@ -47,6 +48,9 @@ Route::middleware(['auth', 'role:admin,employee'])->prefix('admin')->name('admin
 
         Route::get('/fuel-prices',                  [FuelPriceController::class, 'index'])->name('fuel_prices.index');
         Route::patch('/fuel-prices/{fuelPrice}',    [FuelPriceController::class, 'update'])->name('fuel_prices.update');
+
+        Route::get('/settings',        [AdminSettingController::class, 'index'])->name('settings.index');
+        Route::patch('/settings',      [AdminSettingController::class, 'update'])->name('settings.update');
 
         Route::get('/employees',           [EmployeeController::class, 'index'])->name('employees.index');
         Route::get('/employees/create',    [EmployeeController::class, 'create'])->name('employees.create');

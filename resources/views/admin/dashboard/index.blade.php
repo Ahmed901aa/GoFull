@@ -71,7 +71,7 @@
                 <span class="card-title">آخر الطلبات</span>
                 <div style="display:flex;align-items:center;gap:10px;">
                     <span id="refresh-indicator" style="font-size:11px;color:var(--text-faint);"></span>
-                    <a href="{{ route('admin.monitor.index') }}" class="btn btn-ghost btn-sm">عرض الكل ←</a>
+                    <a href="{{ route('admin.income.index') }}" class="btn btn-ghost btn-sm">عرض الكل ←</a>
                 </div>
             </div>
             <div class="table-wrapper">

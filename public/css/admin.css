@@ -306,6 +306,7 @@ tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: var(--primary-faint); }
 tbody td { padding: 12px 16px; font-size: 13.5px; color: var(--text); vertical-align: middle; text-align: right; }
 .td-muted { color: var(--text-muted); }
+.td-mono  { font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: -0.3px; }
 
 /* ── Badges ─────────────────────────────────────── */
 .badge {

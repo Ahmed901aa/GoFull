@@ -235,11 +235,7 @@
         </table>
     </div>
 
-    @if($drivers->hasPages())
-    <div style="padding:16px;display:flex;justify-content:center;">
-        {{ $drivers->links() }}
-    </div>
-    @endif
+    {{ $drivers->links() }}
 </div>
 
 @endsection

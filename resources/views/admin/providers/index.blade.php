@@ -22,21 +22,37 @@
         @endforeach
     </div>
 
-    {{-- Service Type Filter --}}
+    {{-- Search + Service Type Filter --}}
     @php $serviceType = request('service_type'); @endphp
-    <div style="display:flex;gap:8px;margin-bottom:20px;">
-        <a href="{{ route('admin.providers.index', ['status' => $status]) }}"
-           class="btn btn-sm {{ !$serviceType ? 'btn-primary' : 'btn-secondary' }}">
-            📋 الكل
-        </a>
-        <a href="{{ route('admin.providers.index', ['status' => $status, 'service_type' => 'fuel_delivery']) }}"
-           class="btn btn-sm {{ $serviceType === 'fuel_delivery' ? 'btn-primary' : 'btn-secondary' }}">
-            ⛽ وقود
-        </a>
-        <a href="{{ route('admin.providers.index', ['status' => $status, 'service_type' => 'towing']) }}"
-           class="btn btn-sm {{ $serviceType === 'towing' ? 'btn-primary' : 'btn-secondary' }}">
-            🚛 سحب
-        </a>
+    <div style="display:flex;gap:8px;margin-bottom:20px;align-items:center;flex-wrap:wrap;">
+        <form method="GET" action="{{ route('admin.providers.index') }}" style="display:flex;gap:8px;flex:1;min-width:250px;">
+            <input type="hidden" name="status" value="{{ $status }}">
+            @if($serviceType)<input type="hidden" name="service_type" value="{{ $serviceType }}">@endif
+            <input type="text"
+                   name="search"
+                   value="{{ request('search') }}"
+                   placeholder="بحث بالاسم أو رقم الهاتف..."
+                   class="form-control"
+                   style="flex:1;padding:6px 12px;font-size:13px;">
+            <button type="submit" class="btn btn-primary btn-sm">بحث</button>
+            @if(request('search'))
+                <a href="{{ route('admin.providers.index', ['status' => $status, 'service_type' => $serviceType]) }}" class="btn btn-ghost btn-sm">مسح</a>
+            @endif
+        </form>
+        <div style="display:flex;gap:6px;">
+            <a href="{{ route('admin.providers.index', ['status' => $status, 'search' => request('search')]) }}"
+               class="btn btn-sm {{ !$serviceType ? 'btn-primary' : 'btn-secondary' }}">
+                📋 الكل
+            </a>
+            <a href="{{ route('admin.providers.index', ['status' => $status, 'service_type' => 'fuel_delivery', 'search' => request('search')]) }}"
+               class="btn btn-sm {{ $serviceType === 'fuel_delivery' ? 'btn-primary' : 'btn-secondary' }}">
+                ⛽ وقود
+            </a>
+            <a href="{{ route('admin.providers.index', ['status' => $status, 'service_type' => 'towing', 'search' => request('search')]) }}"
+               class="btn btn-sm {{ $serviceType === 'towing' ? 'btn-primary' : 'btn-secondary' }}">
+                🚛 سحب
+            </a>
+        </div>
     </div>
 
     <div class="card">

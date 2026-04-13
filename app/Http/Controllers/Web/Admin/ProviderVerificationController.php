@@ -16,6 +16,7 @@ class ProviderVerificationController extends Controller
     {
         $status = $request->get('status', 'pending');
         $serviceType = $request->get('service_type');
+        $search = $request->get('search');
 
         // Employees only see providers matching their type
         $employeeFilter = $this->resolveServiceType();
@@ -25,22 +26,23 @@ class ProviderVerificationController extends Controller
 
         $providers = ProviderProfile::where('verification_status', $status)
             ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType))
+            ->when($search, fn ($q) => $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%")))
             ->with(['user', 'documents'])
             ->withCount([
-                'serviceRequests as completed_orders' => fn($q) => $q->where('status', 'completed'),
-                'serviceRequests as cancelled_orders' => fn($q) => $q->where('status', 'cancelled'),
+                'serviceRequests as completed_orders' => fn ($q) => $q->where('status', 'completed'),
+                'serviceRequests as cancelled_orders' => fn ($q) => $q->where('status', 'cancelled'),
                 'serviceRequests as total_orders',
             ])
             // Real rating from ratings table
             ->addSelect(['real_avg_rating' => DB::table('ratings')
                 ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
                 ->whereColumn('service_requests.provider_id', 'provider_profiles.id')
-                ->selectRaw('ROUND(AVG(ratings.rating), 1)')
+                ->selectRaw('ROUND(AVG(ratings.rating), 1)'),
             ])
             ->addSelect(['real_total_ratings' => DB::table('ratings')
                 ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
                 ->whereColumn('service_requests.provider_id', 'provider_profiles.id')
-                ->selectRaw('COUNT(*)')
+                ->selectRaw('COUNT(*)'),
             ])
             ->latest()
             ->paginate(15)
@@ -60,9 +62,10 @@ class ProviderVerificationController extends Controller
     {
         $provider->load(['user', 'documents', 'verifiedBy']);
         $provider->loadCount([
-            'serviceRequests as completed_orders' => fn($q) => $q->where('status', 'completed'),
-            'serviceRequests as cancelled_orders' => fn($q) => $q->where('status', 'cancelled'),
+            'serviceRequests as completed_orders' => fn ($q) => $q->where('status', 'completed'),
+            'serviceRequests as cancelled_orders' => fn ($q) => $q->where('status', 'cancelled'),
             'serviceRequests as total_orders',
+            'serviceRequests as active_orders' => fn ($q) => $q->whereIn('status', ['pending', 'accepted', 'en_route', 'arrived', 'in_progress']),
         ]);
 
         // Real rating computed from ratings table
@@ -75,14 +78,50 @@ class ProviderVerificationController extends Controller
         $provider->real_avg_rating = $ratingStats->avg_rating ?? 0;
         $provider->real_total_ratings = $ratingStats->total_ratings ?? 0;
 
-        $totalRevenue = $provider->serviceRequests()->where('status', 'completed')->sum('total');
+        // ── Revenue breakdown ───────────────────────────────
+        $completedBase = $provider->serviceRequests()->where('status', 'completed');
+        $totalRevenue = (clone $completedBase)->sum('total');
+        $todayRevenue = (clone $completedBase)->whereDate('completed_at', today())->sum('total');
+        $weekRevenue = (clone $completedBase)->where('completed_at', '>=', now()->startOfWeek())->sum('total');
+        $monthRevenue = (clone $completedBase)->where('completed_at', '>=', now()->startOfMonth())->sum('total');
+        $totalServiceFees = (clone $completedBase)->sum('service_fee');
+
+        // ── Rating distribution (1-5 stars) ─────────────────
+        $ratingDistribution = DB::table('ratings')
+            ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+            ->where('service_requests.provider_id', $provider->id)
+            ->select('ratings.rating', DB::raw('COUNT(*) as count'))
+            ->groupBy('ratings.rating')
+            ->pluck('count', 'rating');
+
+        // ── Recent ratings with comments ────────────────────
+        $recentRatings = DB::table('ratings')
+            ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+            ->join('users', 'users.id', '=', 'service_requests.driver_id')
+            ->where('service_requests.provider_id', $provider->id)
+            ->select('ratings.rating', 'ratings.comment', 'ratings.created_at', 'users.name as driver_name')
+            ->latest('ratings.created_at')
+            ->take(5)
+            ->get();
+
+        // ── All orders (paginated) ──────────────────────────
         $recentOrders = $provider->serviceRequests()
             ->with(['driver', 'rating'])
             ->latest()
-            ->take(10)
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('admin.providers.show', compact('provider', 'totalRevenue', 'recentOrders'));
+        return view('admin.providers.show', compact(
+            'provider',
+            'totalRevenue',
+            'todayRevenue',
+            'weekRevenue',
+            'monthRevenue',
+            'totalServiceFees',
+            'ratingDistribution',
+            'recentRatings',
+            'recentOrders',
+        ));
     }
 
     public function setAppointment(SetAppointmentRequest $request, ProviderProfile $provider)

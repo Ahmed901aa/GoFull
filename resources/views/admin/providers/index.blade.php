@@ -22,6 +22,23 @@
         @endforeach
     </div>
 
+    {{-- Service Type Filter --}}
+    @php $serviceType = request('service_type'); @endphp
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+        <a href="{{ route('admin.providers.index', ['status' => $status]) }}"
+           class="btn btn-sm {{ !$serviceType ? 'btn-primary' : 'btn-secondary' }}">
+            📋 الكل
+        </a>
+        <a href="{{ route('admin.providers.index', ['status' => $status, 'service_type' => 'fuel_delivery']) }}"
+           class="btn btn-sm {{ $serviceType === 'fuel_delivery' ? 'btn-primary' : 'btn-secondary' }}">
+            ⛽ وقود
+        </a>
+        <a href="{{ route('admin.providers.index', ['status' => $status, 'service_type' => 'towing']) }}"
+           class="btn btn-sm {{ $serviceType === 'towing' ? 'btn-primary' : 'btn-secondary' }}">
+            🚛 سحب
+        </a>
+    </div>
+
     <div class="card">
         <div class="table-wrapper">
             <table>

@@ -14,21 +14,24 @@ class CreateEmployeeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'     => ['required', 'string', 'max:100'],
-            'phone'    => ['required', 'string', 'max:20', 'unique:users,phone'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'name'          => ['required', 'string', 'max:100'],
+            'phone'         => ['required', 'string', 'max:20', 'unique:users,phone'],
+            'password'      => ['required', 'string', 'min:8', 'confirmed'],
+            'employee_type' => ['required', 'string', 'in:fuel,towing'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'name.required'      => 'Employee name is required.',
-            'phone.required'     => 'Phone number is required.',
-            'phone.unique'       => 'This phone number is already registered.',
-            'password.required'  => 'Password is required.',
-            'password.min'       => 'Password must be at least 8 characters.',
-            'password.confirmed' => 'Password confirmation does not match.',
+            'name.required'          => 'اسم الموظف مطلوب.',
+            'phone.required'         => 'رقم الجوال مطلوب.',
+            'phone.unique'           => 'رقم الجوال مسجل مسبقاً.',
+            'password.required'      => 'كلمة المرور مطلوبة.',
+            'password.min'           => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.',
+            'password.confirmed'     => 'تأكيد كلمة المرور غير متطابق.',
+            'employee_type.required' => 'نوع الموظف مطلوب.',
+            'employee_type.in'       => 'نوع الموظف يجب أن يكون وقود أو سحب.',
         ];
     }
 }

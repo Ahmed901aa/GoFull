@@ -54,6 +54,33 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // ── Test Provider (Driver App) — Muftah Saleh (Towing) ─
+        $muftah = User::query()->updateOrCreate(
+            ['phone' => '0923664444'],
+            [
+                'name' => 'مفتاح صالح',
+                'password' => '12345678',
+                'role' => 'provider',
+                'status' => 'active',
+            ]
+        );
+        ProviderProfile::query()->updateOrCreate(
+            ['user_id' => $muftah->id],
+            [
+                'service_type'        => 'towing',
+                'vehicle_make'        => 'ميتسوبيشي',
+                'vehicle_model'       => 'كانتر',
+                'vehicle_year'        => 2020,
+                'vehicle_plate'       => 'ج د ه 5678',
+                'vehicle_color'       => 'أزرق',
+                'is_available'        => true,
+                'verification_status' => 'approved',
+                'verified_at'         => now(),
+                'average_rating'      => 0,
+                'total_ratings'       => 0,
+            ]
+        );
+
         // ── Test Customer (Customer App) ─────────────────────
         User::query()->updateOrCreate(
             ['phone' => '0911111111'],

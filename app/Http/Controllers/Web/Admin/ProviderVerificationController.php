@@ -15,8 +15,16 @@ class ProviderVerificationController extends Controller
     public function index(Request $request)
     {
         $status = $request->get('status', 'pending');
+        $serviceType = $request->get('service_type');
+
+        // Employees only see providers matching their type
+        $employeeFilter = $this->resolveServiceType();
+        if ($employeeFilter) {
+            $serviceType = $employeeFilter;
+        }
 
         $providers = ProviderProfile::where('verification_status', $status)
+            ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType))
             ->with(['user', 'documents'])
             ->withCount([
                 'serviceRequests as completed_orders' => fn($q) => $q->where('status', 'completed'),
@@ -135,5 +143,19 @@ class ProviderVerificationController extends Controller
         );
 
         return back()->with('success', "Provider '{$provider->user->name}' rejected.");
+    }
+
+    private function resolveServiceType(): ?string
+    {
+        $user = auth()->user();
+        if ($user->isAdmin()) {
+            return null;
+        }
+
+        return match ($user->employee_type) {
+            'fuel' => 'fuel_delivery',
+            'towing' => 'towing',
+            default => null,
+        };
     }
 }

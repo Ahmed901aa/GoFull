@@ -23,11 +23,12 @@ class EmployeeController extends Controller
     public function store(CreateEmployeeRequest $request)
     {
         User::create([
-            'name'     => $request->name,
-            'phone'    => $request->phone,
-            'password' => Hash::make($request->password),
-            'role'     => 'employee',
-            'status'   => 'active',
+            'name'          => $request->name,
+            'phone'         => $request->phone,
+            'password'      => Hash::make($request->password),
+            'role'          => 'employee',
+            'employee_type' => $request->employee_type,
+            'status'        => 'active',
         ]);
 
         return redirect()->route('admin.employees.index')

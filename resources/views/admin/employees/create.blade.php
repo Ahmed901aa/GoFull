@@ -25,6 +25,16 @@
                 </div>
 
                 <div class="form-group">
+                    <label class="form-label" for="employee_type">نوع الموظف</label>
+                    <select id="employee_type" name="employee_type" class="form-control" required>
+                        <option value="" disabled {{ old('employee_type') ? '' : 'selected' }}>اختر نوع الموظف</option>
+                        <option value="fuel" {{ old('employee_type') === 'fuel' ? 'selected' : '' }}>⛽ وقود</option>
+                        <option value="towing" {{ old('employee_type') === 'towing' ? 'selected' : '' }}>🚛 سحب</option>
+                    </select>
+                    @error('employee_type') <p class="form-error">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="form-group">
                     <label class="form-label" for="password">كلمة المرور</label>
                     <input id="password" name="password" type="password" class="form-control" required minlength="8" placeholder="8 أحرف على الأقل">
                     @error('password') <p class="form-error">{{ $message }}</p> @enderror

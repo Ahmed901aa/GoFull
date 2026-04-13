@@ -13,13 +13,19 @@ class AnalyticsController extends Controller
 {
     public function index()
     {
-        $completed = ServiceRequest::where('status', 'completed');
+        $serviceType = $this->resolveServiceType();
+
+        $completed = ServiceRequest::where('status', 'completed')
+            ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType));
+
+        $baseQuery = ServiceRequest::query()
+            ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType));
 
         // ── Status & Type Breakdown ──────────────────────────
-        $byStatus = ServiceRequest::select('status', DB::raw('count(*) as total'))
+        $byStatus = (clone $baseQuery)->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')->pluck('total', 'status');
 
-        $byType = ServiceRequest::select('service_type', DB::raw('count(*) as total'))
+        $byType = (clone $baseQuery)->select('service_type', DB::raw('count(*) as total'))
             ->groupBy('service_type')->pluck('total', 'service_type');
 
         // ── Revenue ─────────────────────────────────────────
@@ -42,34 +48,40 @@ class AnalyticsController extends Controller
         $cancellationRate = $totalRequests > 0 ? round(($cancelledCount / $totalRequests) * 100) : 0;
 
         // ── Daily Trends (last 30 days) ─────────────────────
-        $perDay = ServiceRequest::select(
-            DB::raw('DATE(created_at) as date'),
-            DB::raw('count(*) as total'),
-            DB::raw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed"),
-            DB::raw("SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled"),
-        )
+        $perDay = ServiceRequest::query()
+            ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType))
+            ->select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('count(*) as total'),
+                DB::raw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed"),
+                DB::raw("SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled"),
+            )
             ->where('created_at', '>=', now()->subDays(30))
             ->groupBy('date')->orderBy('date')->get();
 
         // ── Revenue per Day (last 30 days) ──────────────────
-        $revenuePerDay = ServiceRequest::select(
-            DB::raw('DATE(completed_at) as date'),
-            DB::raw('ROUND(SUM(total), 2) as revenue'),
-        )
-            ->where('status', 'completed')
+        $revenuePerDay = ServiceRequest::where('status', 'completed')
+            ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType))
+            ->select(
+                DB::raw('DATE(completed_at) as date'),
+                DB::raw('ROUND(SUM(total), 2) as revenue'),
+            )
             ->where('completed_at', '>=', now()->subDays(30))
             ->groupBy('date')->orderBy('date')->get();
 
         // ── Peak Hours ──────────────────────────────────────
-        $peakHours = ServiceRequest::select(
-            DB::raw('HOUR(created_at) as hour'),
-            DB::raw('count(*) as total'),
-        )
+        $peakHours = ServiceRequest::query()
+            ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType))
+            ->select(
+                DB::raw('HOUR(created_at) as hour'),
+                DB::raw('count(*) as total'),
+            )
             ->where('created_at', '>=', now()->subDays(30))
             ->groupBy('hour')->orderBy('hour')->pluck('total', 'hour');
 
         // ── Top Providers ───────────────────────────────────
         $topProviders = ProviderProfile::where('verification_status', 'approved')
+            ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType))
             ->with('user')
             ->withCount([
                 'serviceRequests as completed_orders' => fn ($q) => $q->where('status', 'completed'),
@@ -120,5 +132,19 @@ class AnalyticsController extends Controller
             'avgOrderValue',
             'currentServiceFee',
         ));
+    }
+
+    private function resolveServiceType(): ?string
+    {
+        $user = auth()->user();
+        if ($user->isAdmin()) {
+            return null;
+        }
+
+        return match ($user->employee_type) {
+            'fuel' => 'fuel_delivery',
+            'towing' => 'towing',
+            default => null,
+        };
     }
 }

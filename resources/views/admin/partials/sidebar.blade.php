@@ -23,7 +23,14 @@
                 <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
             </svg>
             المراقبة المباشرة
-            @php $active = \App\Models\ServiceRequest::whereIn('status',['pending','accepted','en_route','arrived','in_progress'])->count(); @endphp
+            @php
+                $activeQuery = \App\Models\ServiceRequest::whereIn('status',['pending','accepted','en_route','arrived','in_progress']);
+                if (!auth()->user()->isAdmin() && auth()->user()->employee_type) {
+                    $mappedType = match(auth()->user()->employee_type) { 'fuel' => 'fuel_delivery', 'towing' => 'towing', default => null };
+                    if ($mappedType) { $activeQuery->where('service_type', $mappedType); }
+                }
+                $active = $activeQuery->count();
+            @endphp
             @if($active > 0)
                 <span class="nav-badge">{{ $active }}</span>
             @endif
@@ -54,7 +61,14 @@
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             مزودو الخدمة
-            @php $pending = \App\Models\ProviderProfile::where('verification_status','pending')->count(); @endphp
+            @php
+                $pendingQuery = \App\Models\ProviderProfile::where('verification_status','pending');
+                if (!auth()->user()->isAdmin() && auth()->user()->employee_type) {
+                    $mappedSvc = match(auth()->user()->employee_type) { 'fuel' => 'fuel_delivery', 'towing' => 'towing', default => null };
+                    if ($mappedSvc) { $pendingQuery->where('service_type', $mappedSvc); }
+                }
+                $pending = $pendingQuery->count();
+            @endphp
             @if($pending > 0)
                 <span class="nav-badge">{{ $pending }}</span>
             @endif
@@ -111,7 +125,17 @@
             </form>
             <div class="sidebar-user-info">
                 <div class="sidebar-user-name">{{ auth()->user()->name }}</div>
-                <div class="sidebar-user-role">{{ auth()->user()->role === 'admin' ? 'مدير' : 'موظف' }}</div>
+                <div class="sidebar-user-role">
+                    @if(auth()->user()->role === 'admin')
+                        مدير
+                    @elseif(auth()->user()->employee_type === 'fuel')
+                        موظف وقود
+                    @elseif(auth()->user()->employee_type === 'towing')
+                        موظف سحب
+                    @else
+                        موظف
+                    @endif
+                </div>
             </div>
             <div class="sidebar-avatar">
                 {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}

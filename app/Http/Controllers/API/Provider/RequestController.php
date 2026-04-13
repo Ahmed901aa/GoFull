@@ -15,6 +15,7 @@ class RequestController extends Controller
         $provider = auth()->user()->providerProfile;
 
         $requests = ServiceRequest::where('status', 'pending')
+            ->where('service_type', $provider->service_type)
             ->with('driver')
             ->latest()
             ->paginate(15);
@@ -48,6 +49,10 @@ class RequestController extends Controller
 
         if (! $provider->is_available) {
             return response()->json(['success' => false, 'message' => 'You are currently set as unavailable.'], 422);
+        }
+
+        if ($request->service_type !== $provider->service_type) {
+            return response()->json(['success' => false, 'message' => 'This request does not match your service type.'], 422);
         }
 
         $hasActive = ServiceRequest::where('provider_id', $provider->id)

@@ -12,7 +12,10 @@ class DriverIncomeController extends Controller
 {
     public function index(Request $request)
     {
-        $completedBase = ServiceRequest::where('status', 'completed');
+        $serviceType = $this->resolveServiceType();
+
+        $completedBase = ServiceRequest::where('status', 'completed')
+            ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType));
 
         // ── Global Stats ────────────────────────────────────
         $totalIncome = (clone $completedBase)->sum('total');
@@ -35,15 +38,16 @@ class DriverIncomeController extends Controller
         // ── Top Requesters (drivers who placed the most orders) ─
         $topRequesters = User::where('role', 'driver')
             ->withCount([
-                'serviceRequests as total_requests',
-                'serviceRequests as completed_requests' => fn ($q) => $q->where('status', 'completed'),
+                'serviceRequests as total_requests' => fn ($q) => $q->when($serviceType, fn ($q2) => $q2->where('service_type', $serviceType)),
+                'serviceRequests as completed_requests' => fn ($q) => $q->where('status', 'completed')->when($serviceType, fn ($q2) => $q2->where('service_type', $serviceType)),
                 'serviceRequests as fuel_requests'      => fn ($q) => $q->where('service_type', 'fuel_delivery'),
                 'serviceRequests as towing_requests'    => fn ($q) => $q->where('service_type', 'towing'),
             ])
             ->addSelect([
                 'total_spent' => ServiceRequest::select(DB::raw('COALESCE(SUM(total), 0)'))
                     ->whereColumn('driver_id', 'users.id')
-                    ->where('status', 'completed'),
+                    ->where('status', 'completed')
+                    ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType)),
             ])
             ->having('total_requests', '>', 0)
             ->orderByDesc('total_requests')
@@ -54,12 +58,13 @@ class DriverIncomeController extends Controller
         $driversQuery = User::where('role', 'driver')
             ->with('vehicle')
             ->withCount([
-                'serviceRequests as completed_orders' => fn ($q) => $q->where('status', 'completed'),
+                'serviceRequests as completed_orders' => fn ($q) => $q->where('status', 'completed')->when($serviceType, fn ($q2) => $q2->where('service_type', $serviceType)),
             ])
             ->addSelect([
                 'total_income' => ServiceRequest::select(DB::raw('COALESCE(SUM(total), 0)'))
                     ->whereColumn('driver_id', 'users.id')
-                    ->where('status', 'completed'),
+                    ->where('status', 'completed')
+                    ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType)),
             ])
             ->having('completed_orders', '>', 0)
             ->orderByDesc('total_income');
@@ -93,20 +98,25 @@ class DriverIncomeController extends Controller
     {
         abort_unless($driver->role === 'driver', 404);
 
+        $serviceType = $this->resolveServiceType();
+
         $driver->load('vehicle');
 
         $orders = $driver->serviceRequests()
             ->where('status', 'completed')
+            ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType))
             ->with('provider.user')
             ->latest('completed_at')
             ->paginate(20);
 
         $totalIncome = $driver->serviceRequests()
             ->where('status', 'completed')
+            ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType))
             ->sum('total');
 
         $todayIncome = $driver->serviceRequests()
             ->where('status', 'completed')
+            ->when($serviceType, fn ($q) => $q->where('service_type', $serviceType))
             ->whereDate('completed_at', today())
             ->sum('total');
 
@@ -116,5 +126,19 @@ class DriverIncomeController extends Controller
             'totalIncome',
             'todayIncome',
         ));
+    }
+
+    private function resolveServiceType(): ?string
+    {
+        $user = auth()->user();
+        if ($user->isAdmin()) {
+            return null;
+        }
+
+        return match ($user->employee_type) {
+            'fuel' => 'fuel_delivery',
+            'towing' => 'towing',
+            default => null,
+        };
     }
 }

@@ -20,6 +20,7 @@
                         <th>#</th>
                         <th>الاسم</th>
                         <th>رقم الجوال</th>
+                        <th>النوع</th>
                         <th>الحالة</th>
                         <th>تاريخ الإنشاء</th>
                         <th>إجراءات</th>
@@ -31,6 +32,15 @@
                         <td class="td-muted td-mono">#{{ $emp->id }}</td>
                         <td style="font-weight:600;">{{ $emp->name }}</td>
                         <td class="td-muted">{{ $emp->phone }}</td>
+                        <td>
+                            @if($emp->employee_type === 'fuel')
+                                <span class="badge badge-primary">⛽ وقود</span>
+                            @elseif($emp->employee_type === 'towing')
+                                <span class="badge" style="background:#fff3e0;color:#e65100;">🚛 سحب</span>
+                            @else
+                                <span class="td-muted">—</span>
+                            @endif
+                        </td>
                         <td>
                             <span class="badge" style="background:{{ $emp->status === 'active' ? '#e8f5e9' : '#fce4ec' }};color:{{ $emp->status === 'active' ? '#2e7d32' : '#c62828' }};">
                                 {{ $emp->status === 'active' ? 'نشط' : 'معطّل' }}
@@ -46,7 +56,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="6">
+                    <tr><td colspan="7">
                         <div class="empty-state">
                             <div class="empty-state-icon">👥</div>
                             <h3>لا يوجد موظفون بعد</h3>

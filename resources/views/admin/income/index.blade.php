@@ -3,97 +3,97 @@
 @section('content')
 
 {{-- ════════════════════════════════════════════════════════
-     Section 1 — Overview Stats
+     Section 1 — Revenue Overview (gradient cards)
      ════════════════════════════════════════════════════════ --}}
-<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
-    <div class="stat-card">
-        <div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;">💰</div>
-        <div>
-            <div class="stat-value">{{ number_format($totalIncome, 2) }}</div>
-            <div class="stat-label">إجمالي الدخل (د.ل)</div>
+<div class="inc-row" style="grid-template-columns:repeat(4,1fr);">
+    <div class="inc-metric-card inc-green">
+        <div class="inc-metric-icon">💰</div>
+        <div class="inc-metric-value">{{ number_format($totalIncome, 2) }}</div>
+        <div class="inc-metric-label">إجمالي الدخل (د.ل)</div>
+    </div>
+    <div class="inc-metric-card inc-blue">
+        <div class="inc-metric-icon">👥</div>
+        <div class="inc-metric-value">{{ $driversWithCompletedOrders }}</div>
+        <div class="inc-metric-label">سائقون أكملوا طلبات</div>
+    </div>
+    <div class="inc-metric-card inc-purple">
+        <div class="inc-metric-icon">🧾</div>
+        <div class="inc-metric-value">{{ $totalPaidOrders }}</div>
+        <div class="inc-metric-label">طلبات مدفوعة</div>
+    </div>
+    <div class="inc-metric-card inc-orange">
+        <div class="inc-metric-icon">💳</div>
+        <div class="inc-metric-value">{{ number_format($cashPaid, 2) }}</div>
+        <div class="inc-metric-label">المدفوع نقداً (د.ل)</div>
+    </div>
+</div>
+
+{{-- ════════════════════════════════════════════════════════
+     Section 2 — Fuel vs Towing Cards + Payment Stats
+     ════════════════════════════════════════════════════════ --}}
+<div class="inc-row" style="grid-template-columns:1fr 1fr 1fr;">
+    {{-- Fuel --}}
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">⛽ وقود</span>
+        </div>
+        <div class="card-body" style="display:flex;gap:16px;">
+            <div class="inc-mini" style="background:#e8f5e9;flex:1;text-align:center;">
+                <div style="font-size:11px;color:var(--text-muted);">طلبات مكتملة</div>
+                <div style="font-size:24px;font-weight:800;color:#2e7d32;">{{ $fuelOrders }}</div>
+            </div>
+            <div class="inc-mini" style="background:#e8f5e9;flex:1;text-align:center;">
+                <div style="font-size:11px;color:var(--text-muted);">الدخل</div>
+                <div style="font-size:20px;font-weight:800;color:#2e7d32;">{{ number_format($fuelIncome, 2) }}</div>
+                <div style="font-size:10px;color:var(--text-faint);">د.ل</div>
+            </div>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon" style="background:#e3f2fd;color:#1565c0;">👥</div>
-        <div>
-            <div class="stat-value">{{ $driversWithCompletedOrders }}</div>
-            <div class="stat-label">سائقون أكملوا طلبات</div>
+
+    {{-- Towing --}}
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🚛 سحب</span>
+        </div>
+        <div class="card-body" style="display:flex;gap:16px;">
+            <div class="inc-mini" style="background:#fff3e0;flex:1;text-align:center;">
+                <div style="font-size:11px;color:var(--text-muted);">طلبات مكتملة</div>
+                <div style="font-size:24px;font-weight:800;color:#e65100;">{{ $towingOrders }}</div>
+            </div>
+            <div class="inc-mini" style="background:#fff3e0;flex:1;text-align:center;">
+                <div style="font-size:11px;color:var(--text-muted);">الدخل</div>
+                <div style="font-size:20px;font-weight:800;color:#e65100;">{{ number_format($towingIncome, 2) }}</div>
+                <div style="font-size:10px;color:var(--text-faint);">د.ل</div>
+            </div>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon" style="background:#ede7f6;color:#4a148c;">📊</div>
-        <div>
-            <div class="stat-value">{{ $drivers->total() }}</div>
-            <div class="stat-label">إجمالي السائقين النشطين</div>
+
+    {{-- Payment Summary --}}
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">ملخص الدفع</span>
+        </div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface-2);border-radius:var(--radius-sm);">
+                <span style="font-size:12px;color:var(--text-muted);">إجمالي المدفوع</span>
+                <span style="font-size:16px;font-weight:700;color:#2e7d32;">{{ number_format($totalPaidAmount, 2) }} د.ل</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface-2);border-radius:var(--radius-sm);">
+                <span style="font-size:12px;color:var(--text-muted);">طلبات مدفوعة</span>
+                <span style="font-size:16px;font-weight:700;color:#4a148c;">{{ $totalPaidOrders }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface-2);border-radius:var(--radius-sm);">
+                <span style="font-size:12px;color:var(--text-muted);">نقداً</span>
+                <span style="font-size:16px;font-weight:700;color:#c62828;">{{ number_format($cashPaid, 2) }} د.ل</span>
+            </div>
         </div>
     </div>
 </div>
 
 {{-- ════════════════════════════════════════════════════════
-     Section 2 — Orders Breakdown (Fuel vs Towing)
+     Section 3 — Top Requesters
      ════════════════════════════════════════════════════════ --}}
-<div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);margin-top:20px;">
-    <div class="stat-card">
-        <div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;">⛽</div>
-        <div>
-            <div class="stat-value">{{ $fuelOrders }}</div>
-            <div class="stat-label">طلبات وقود مكتملة</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon" style="background:#fff3e0;color:#e65100;">🚛</div>
-        <div>
-            <div class="stat-value">{{ $towingOrders }}</div>
-            <div class="stat-label">طلبات سحب مكتملة</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;">💵</div>
-        <div>
-            <div class="stat-value">{{ number_format($fuelIncome, 2) }}</div>
-            <div class="stat-label">دخل الوقود (د.ل)</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon" style="background:#fff3e0;color:#e65100;">💵</div>
-        <div>
-            <div class="stat-value">{{ number_format($towingIncome, 2) }}</div>
-            <div class="stat-label">دخل السحب (د.ل)</div>
-        </div>
-    </div>
-</div>
-
-{{-- ════════════════════════════════════════════════════════
-     Section 3 — Payment Stats
-     ════════════════════════════════════════════════════════ --}}
-<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);margin-top:20px;">
-    <div class="stat-card">
-        <div class="stat-icon" style="background:#f3e5f5;color:#6a1b9a;">🧾</div>
-        <div>
-            <div class="stat-value">{{ $totalPaidOrders }}</div>
-            <div class="stat-label">عدد الطلبات المدفوعة</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;">✅</div>
-        <div>
-            <div class="stat-value">{{ number_format($totalPaidAmount, 2) }}</div>
-            <div class="stat-label">إجمالي المبالغ المدفوعة (د.ل)</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon" style="background:#fce4ec;color:#c62828;">💳</div>
-        <div>
-            <div class="stat-value">{{ number_format($cashPaid, 2) }}</div>
-            <div class="stat-label">المدفوع نقداً (د.ل)</div>
-        </div>
-    </div>
-</div>
-
-{{-- ════════════════════════════════════════════════════════
-     Section 4 — Top Requesters
-     ════════════════════════════════════════════════════════ --}}
-<div class="card" style="margin-top:20px;margin-bottom:20px;">
+<div class="card" style="margin-bottom:20px;">
     <div class="card-header">
         <span class="card-title">أكثر السائقين طلباً (أعلى 10)</span>
     </div>
@@ -154,28 +154,24 @@
 </div>
 
 {{-- ════════════════════════════════════════════════════════
-     Section 5 — Driver Income Table (existing + search)
+     Section 4 — Driver Income Table + Search
      ════════════════════════════════════════════════════════ --}}
 <div class="card" style="margin-bottom:20px;">
     <div class="card-header">
         <span class="card-title">دخل السائقين</span>
-    </div>
-    <div style="padding:16px;">
-        <form method="GET" action="{{ route('admin.income.index') }}" style="display:flex;gap:10px;">
+        <form method="GET" action="{{ route('admin.income.index') }}" style="display:flex;gap:8px;">
             <input type="text"
                    name="search"
                    value="{{ request('search') }}"
                    placeholder="بحث بالاسم أو رقم الهاتف..."
-                   style="flex:1;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;">
+                   class="form-control"
+                   style="width:260px;padding:6px 12px;font-size:13px;">
             <button type="submit" class="btn btn-primary btn-sm">بحث</button>
             @if(request('search'))
                 <a href="{{ route('admin.income.index') }}" class="btn btn-ghost btn-sm">مسح</a>
             @endif
         </form>
     </div>
-</div>
-
-<div class="card">
     <div class="table-wrapper">
         <table>
             <thead>
@@ -242,8 +238,67 @@
 
 @push('styles')
 <style>
-    @media (max-width: 900px) {
-        .stats-grid { grid-template-columns: 1fr !important; }
+    .inc-row {
+        display: grid;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    /* ── Metric Cards ──────────── */
+    .inc-metric-card {
+        border-radius: var(--radius);
+        padding: 20px;
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative;
+        overflow: hidden;
+        background: var(--surface);
+    }
+    .inc-metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+    }
+    .inc-metric-card::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 3px;
+    }
+    .inc-green { border: 1px solid #c8e6c9; }
+    .inc-green::after { background: #2e7d32; }
+    .inc-blue { border: 1px solid #bbdefb; }
+    .inc-blue::after { background: #1565c0; }
+    .inc-purple { border: 1px solid #d1c4e9; }
+    .inc-purple::after { background: #6a1b9a; }
+    .inc-orange { border: 1px solid #ffe0b2; }
+    .inc-orange::after { background: #e65100; }
+
+    .inc-metric-icon { font-size: 20px; margin-bottom: 8px; }
+    .inc-metric-value {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--text);
+        line-height: 1;
+        margin-bottom: 4px;
+    }
+    .inc-metric-label {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    /* ── Mini Stat Block ─────── */
+    .inc-mini {
+        padding: 14px;
+        border-radius: var(--radius-sm);
+    }
+
+    @media (max-width: 1100px) {
+        .inc-row { grid-template-columns: 1fr 1fr !important; }
+    }
+    @media (max-width: 768px) {
+        .inc-row { grid-template-columns: 1fr !important; }
     }
 </style>
 @endpush

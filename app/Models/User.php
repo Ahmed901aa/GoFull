@@ -17,6 +17,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'role',
+        'employee_type',
         'status',
         'fcm_token',
     ];

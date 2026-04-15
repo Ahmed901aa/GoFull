@@ -624,7 +624,8 @@
     // ── Bar — Peak Hours ─────────────────────────────────
     (function() {
         const hours = Array.from({length: 24}, (_, i) => i);
-        const data = hours.map(h => {!! json_encode($peakHours) !!}[h] || 0);
+        const peakMap = {!! json_encode((object) $peakHours) !!};
+        const data = hours.map(h => peakMap[h] || 0);
         const maxVal = Math.max(...data, 1);
         const colors = data.map(v => {
             const ratio = v / maxVal;

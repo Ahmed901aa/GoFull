@@ -6,13 +6,13 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'لوحة التحكم') — GoFull</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
     <style>
         body { font-family: 'Cairo', sans-serif; }
 
         /* RTL fixes */
-        .sidebar { left: auto; right: 0; border-right: none; border-left: 1px solid var(--border); }
+        .sidebar { left: auto; right: 0; border-right: none; border-left: 1px solid rgba(255,255,255,0.05); }
         .main-content { margin-left: 0; margin-right: var(--sidebar-width); }
         .nav-badge { margin-left: 0; margin-right: auto; }
         thead th { text-align: right; }

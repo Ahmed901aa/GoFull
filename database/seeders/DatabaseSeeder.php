@@ -40,17 +40,17 @@ class DatabaseSeeder extends Seeder
         ProviderProfile::query()->updateOrCreate(
             ['user_id' => $ibrahim->id],
             [
-                'service_type'        => 'fuel_delivery',
-                'vehicle_make'        => 'تويوتا',
-                'vehicle_model'       => 'هايلكس',
-                'vehicle_year'        => 2022,
-                'vehicle_plate'       => 'أ ب م 1234',
-                'vehicle_color'       => 'أبيض',
-                'is_available'        => true,
+                'service_type' => 'fuel_delivery',
+                'vehicle_make' => 'تويوتا',
+                'vehicle_model' => 'هايلكس',
+                'vehicle_year' => 2022,
+                'vehicle_plate' => 'أ ب م 1234',
+                'vehicle_color' => 'أبيض',
+                'is_available' => true,
                 'verification_status' => 'approved',
-                'verified_at'         => now(),
-                'average_rating'      => 0,
-                'total_ratings'       => 0,
+                'verified_at' => now(),
+                'average_rating' => 0,
+                'total_ratings' => 0,
             ]
         );
 
@@ -67,17 +67,17 @@ class DatabaseSeeder extends Seeder
         ProviderProfile::query()->updateOrCreate(
             ['user_id' => $muftah->id],
             [
-                'service_type'        => 'towing',
-                'vehicle_make'        => 'ميتسوبيشي',
-                'vehicle_model'       => 'كانتر',
-                'vehicle_year'        => 2020,
-                'vehicle_plate'       => 'ج د ه 5678',
-                'vehicle_color'       => 'أزرق',
-                'is_available'        => true,
+                'service_type' => 'towing',
+                'vehicle_make' => 'ميتسوبيشي',
+                'vehicle_model' => 'كانتر',
+                'vehicle_year' => 2020,
+                'vehicle_plate' => 'ج د ه 5678',
+                'vehicle_color' => 'أزرق',
+                'is_available' => true,
                 'verification_status' => 'approved',
-                'verified_at'         => now(),
-                'average_rating'      => 0,
-                'total_ratings'       => 0,
+                'verified_at' => now(),
+                'average_rating' => 0,
+                'total_ratings' => 0,
             ]
         );
 
@@ -110,7 +110,7 @@ class DatabaseSeeder extends Seeder
             ['title' => 'خصم 20% على أول طلب وقود'],
             [
                 'subtitle' => 'استخدم الكود للحصول على الخصم',
-                'image_url' => null,
+                'image_url' => '/images/logo.png',
                 'discount_code' => 'GO20',
                 'color_hex' => '#004B3B',
                 'is_active' => true,
@@ -121,7 +121,7 @@ class DatabaseSeeder extends Seeder
             ['title' => 'خصم 20% على أول طلب ونش'],
             [
                 'subtitle' => 'استخدم الكود للحصول على الخصم',
-                'image_url' => null,
+                'image_url' => '/images/logo.png',
                 'discount_code' => 'GO20',
                 'color_hex' => '#006B52',
                 'is_active' => true,
@@ -136,5 +136,8 @@ class DatabaseSeeder extends Seeder
         AppSetting::setValue('towing_base_price', '50.00');
         AppSetting::setValue('app_name', 'GO FULL');
         AppSetting::setValue('support_phone', '0915909734');
+
+        // Seed test orders & ratings for providers
+        $this->call(TestOrdersAndRatingsSeeder::class);
     }
 }

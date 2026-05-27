@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class ProviderDocument extends Model
 {
@@ -15,6 +16,20 @@ class ProviderDocument extends Model
         'document_path',
         'status',
     ];
+
+    protected $appends = ['document_url'];
+
+    /**
+     * Full URL for the document file.
+     */
+    public function getDocumentUrlAttribute(): ?string
+    {
+        if (! $this->document_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->document_path);
+    }
 
     // ========== Helpers ==========
 

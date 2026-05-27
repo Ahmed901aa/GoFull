@@ -21,7 +21,7 @@ class HomeController extends Controller
         if ($request->user()) {
             $activeOrder = ServiceRequest::where('driver_id', $request->user()->id)
                 ->whereIn('status', ['pending', 'accepted', 'en_route', 'arrived', 'in_progress'])
-                ->with('provider.user')
+                ->with(['provider.user', 'driver', 'rating'])
                 ->latest()
                 ->first();
         }

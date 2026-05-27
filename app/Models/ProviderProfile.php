@@ -18,6 +18,7 @@ class ProviderProfile extends Model
         'vehicle_plate',
         'vehicle_color',
         'is_available',
+        'was_available_before_order',
         'verification_status',
         'appointment_date',
         'appointment_notes',
@@ -32,10 +33,11 @@ class ProviderProfile extends Model
     ];
 
     protected $casts = [
-        'is_available'     => 'boolean',
+        'is_available' => 'boolean',
+        'was_available_before_order' => 'boolean',
         'appointment_date' => 'datetime',
-        'verified_at'      => 'datetime',
-        'average_rating'   => 'decimal:2',
+        'verified_at' => 'datetime',
+        'average_rating' => 'decimal:2',
     ];
 
     // ========== Helpers ==========

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Provider;
 
+use App\Events\OrderCancelled;
+use App\Events\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Provider\UpdateStatusRequest;
 use App\Models\ServiceRequest;
@@ -35,7 +37,7 @@ class RequestController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $request,
+            'data' => $request,
         ]);
     }
 
@@ -70,9 +72,15 @@ class RequestController extends Controller
             return response()->json(['success' => false, 'message' => 'This request is no longer available.'], 422);
         }
 
+        // ── Auto-status: save previous availability, force active ──
+        $provider->update([
+            'was_available_before_order' => $provider->is_available,
+            'is_available' => true,
+        ]);
+
         $request->update([
             'provider_id' => $provider->id,
-            'status'      => 'accepted',
+            'status' => 'accepted',
             'accepted_at' => now(),
         ]);
 
@@ -83,10 +91,12 @@ class RequestController extends Controller
             ['request_id' => $request->id]
         );
 
+        broadcast(new OrderStatusUpdated($request))->toOthers();
+
         return response()->json([
             'success' => true,
             'message' => 'Request accepted successfully.',
-            'data'    => $request->load(['driver', 'provider.user']),
+            'data' => $request->load(['driver', 'provider.user']),
         ]);
     }
 
@@ -102,7 +112,7 @@ class RequestController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $activeRequest,
+            'data' => $activeRequest,
         ]);
     }
 
@@ -132,14 +142,14 @@ class RequestController extends Controller
         }
 
         request()->validate([
-            'rating'  => ['required', 'integer', 'min:1', 'max:5'],
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
             'comment' => ['nullable', 'string', 'max:500'],
         ]);
 
         $rating = $serviceRequest->rating()->updateOrCreate(
             ['request_id' => $serviceRequest->id],
             [
-                'rating'  => request('rating'),
+                'rating' => request('rating'),
                 'comment' => request('comment'),
             ]
         );
@@ -147,7 +157,7 @@ class RequestController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Rating submitted successfully.',
-            'data'    => $rating,
+            'data' => $rating,
         ]);
     }
 
@@ -158,7 +168,7 @@ class RequestController extends Controller
         }
 
         $request->update([
-            'status'       => 'cancelled',
+            'status' => 'cancelled',
             'cancelled_at' => now(),
             'cancelled_by' => 'provider',
             'cancellation_reason' => 'تم الرفض من قبل مزود الخدمة',
@@ -171,7 +181,51 @@ class RequestController extends Controller
             ['request_id' => $request->id, 'status' => 'cancelled']
         );
 
+        broadcast(new OrderCancelled($request))->toOthers();
+
         return response()->json(['success' => true, 'message' => 'Request rejected successfully.']);
+    }
+
+    public function cancel(ServiceRequest $request): JsonResponse
+    {
+        $provider = auth()->user()->providerProfile;
+
+        if ($request->provider_id !== $provider->id) {
+            return response()->json(['success' => false, 'message' => 'Request not found.'], 404);
+        }
+
+        $cancellableStatuses = ['accepted', 'en_route', 'arrived', 'in_progress'];
+        if (! in_array($request->status, $cancellableStatuses)) {
+            return response()->json(['success' => false, 'message' => 'Only active requests can be cancelled.'], 422);
+        }
+
+        $reason = request('reason', 'تم الإلغاء من قبل مزود الخدمة');
+
+        $request->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now(),
+            'cancelled_by' => 'provider',
+            'cancellation_reason' => $reason,
+        ]);
+
+        // ── Auto-status: restore previous availability ──
+        $provider->update([
+            'is_available' => $provider->was_available_before_order,
+        ]);
+
+        NotificationService::send(
+            $request->driver,
+            'Request Cancelled',
+            'The provider has cancelled your request. We are looking for another provider.',
+            ['request_id' => $request->id, 'status' => 'cancelled']
+        );
+
+        broadcast(new OrderCancelled($request))->toOthers();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Request cancelled successfully.',
+        ]);
     }
 
     public function updateStatus(UpdateStatusRequest $request, ServiceRequest $serviceRequest): JsonResponse
@@ -182,9 +236,9 @@ class RequestController extends Controller
             return response()->json(['success' => false, 'message' => 'Request not found.'], 404);
         }
 
-        $newStatus  = $request->status;
+        $newStatus = $request->status;
         $timestamps = [
-            'arrived'   => ['arrived_at'   => now()],
+            'arrived' => ['arrived_at' => now()],
             'completed' => ['completed_at' => now()],
         ];
 
@@ -193,11 +247,18 @@ class RequestController extends Controller
             $timestamps[$newStatus] ?? []
         ));
 
+        // ── Auto-status: restore previous availability on completion ──
+        if ($newStatus === 'completed') {
+            $provider->update([
+                'is_available' => $provider->was_available_before_order,
+            ]);
+        }
+
         $messages = [
-            'en_route'    => ['title' => 'Provider En Route',   'body' => 'Your provider is on the way.'],
-            'arrived'     => ['title' => 'Provider Arrived',    'body' => 'Your provider has arrived at your location.'],
+            'en_route' => ['title' => 'Provider En Route',   'body' => 'Your provider is on the way.'],
+            'arrived' => ['title' => 'Provider Arrived',    'body' => 'Your provider has arrived at your location.'],
             'in_progress' => ['title' => 'Service In Progress', 'body' => 'Your service is now in progress.'],
-            'completed'   => ['title' => 'Service Completed',   'body' => 'Service complete. Please rate your experience.'],
+            'completed' => ['title' => 'Service Completed',   'body' => 'Service complete. Please rate your experience.'],
         ];
 
         if (isset($messages[$newStatus])) {
@@ -209,10 +270,12 @@ class RequestController extends Controller
             );
         }
 
+        broadcast(new OrderStatusUpdated($serviceRequest))->toOthers();
+
         return response()->json([
             'success' => true,
             'message' => "Status updated to '{$newStatus}' successfully.",
-            'data'    => $serviceRequest->fresh(['driver', 'provider']),
+            'data' => $serviceRequest->fresh(['driver', 'provider']),
         ]);
     }
 }

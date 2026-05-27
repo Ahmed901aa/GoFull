@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Driver;
 
+use App\Events\NewOrderCreated;
+use App\Events\OrderCancelled;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Driver\FuelDeliveryRequest;
 use App\Http\Requests\Driver\TowingRequest;
@@ -78,6 +80,8 @@ class ServiceRequestController extends Controller
             ['request_id' => $serviceRequest->id, 'type' => 'fuel_delivery']
         );
 
+        broadcast(new NewOrderCreated($serviceRequest))->toOthers();
+
         return response()->json([
             'success' => true,
             'message' => 'Fuel delivery request created. Waiting for a provider to accept.',
@@ -136,6 +140,8 @@ class ServiceRequestController extends Controller
             'A new towing request is available near you.',
             ['request_id' => $serviceRequest->id, 'type' => 'towing']
         );
+
+        broadcast(new NewOrderCreated($serviceRequest))->toOthers();
 
         return response()->json([
             'success' => true,
@@ -206,6 +212,8 @@ class ServiceRequestController extends Controller
                 ['request_id' => $request->id]
             );
         }
+
+        broadcast(new OrderCancelled($request))->toOthers();
 
         return response()->json(['success' => true, 'message' => 'Request cancelled successfully.']);
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\Driver;
 
+use App\Events\ProviderRated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Driver\RatingRequest;
 use App\Models\ServiceRequest;
@@ -31,18 +32,18 @@ class RatingController extends Controller
         }
 
         $rating = $serviceRequest->rating()->create([
-            'rating'  => $request->rating,
+            'rating' => $request->rating,
             'comment' => $request->comment,
         ]);
 
         $provider = $serviceRequest->provider;
 
         if ($provider) {
-            $newTotal   = $provider->total_ratings + 1;
+            $newTotal = $provider->total_ratings + 1;
             $newAverage = (($provider->average_rating * $provider->total_ratings) + $request->rating) / $newTotal;
 
             $provider->update([
-                'total_ratings'  => $newTotal,
+                'total_ratings' => $newTotal,
                 'average_rating' => round($newAverage, 2),
             ]);
 
@@ -52,12 +53,14 @@ class RatingController extends Controller
                 "You received a {$request->rating}-star rating.",
                 ['request_id' => $serviceRequest->id, 'rating' => $request->rating]
             );
+
+            broadcast(new ProviderRated($provider, $rating))->toOthers();
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Rating submitted successfully.',
-            'data'    => $rating,
+            'data' => $rating,
         ], 201);
     }
 }

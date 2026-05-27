@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Provider;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProfileController extends Controller
 {
@@ -23,6 +24,16 @@ class ProfileController extends Controller
         $completedOrders = (clone $completedRequests)->count();
         $totalIncome = (clone $completedRequests)->sum('total');
 
+        // Calculate ratings live from the ratings table (raw query to avoid GROUP BY issue)
+        $ratingStats = DB::table('ratings')
+            ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+            ->where('service_requests.provider_id', $profile->id)
+            ->selectRaw('ROUND(AVG(ratings.rating), 1) as avg_rating, COUNT(*) as total_ratings')
+            ->first();
+
+        $averageRating = (float) ($ratingStats->avg_rating ?? $profile->average_rating ?? 0);
+        $totalRatings = (int) ($ratingStats->total_ratings ?? $profile->total_ratings ?? 0);
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -39,8 +50,8 @@ class ProfileController extends Controller
                 'vehicle_color' => $profile->vehicle_color,
                 'is_available' => $profile->is_available,
                 'verification_status' => $profile->verification_status,
-                'average_rating' => $profile->average_rating,
-                'total_ratings' => $profile->total_ratings,
+                'average_rating' => $averageRating,
+                'total_ratings' => $totalRatings,
                 'completed_orders' => $completedOrders,
                 'total_income' => round($totalIncome, 2),
                 'created_at' => $profile->created_at,
@@ -48,6 +59,7 @@ class ProfileController extends Controller
                     'id' => $doc->id,
                     'type' => $doc->document_type,
                     'path' => $doc->document_path,
+                    'url' => $doc->document_url,
                 ]),
             ],
         ]);

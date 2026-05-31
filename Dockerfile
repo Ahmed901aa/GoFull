@@ -15,4 +15,4 @@ RUN composer run-script post-autoload-dump 2>/dev/null || true
 RUN mkdir -p storage/framework/{sessions,views,cache} \
     && chmod -R 775 storage bootstrap/cache
 
-CMD ["sh", "-c", "php artisan migrate --force 2>/dev/null; php artisan db:seed --force 2>/dev/null; php -S 0.0.0.0:${PORT} -t public"]
+CMD ["sh", "-c", "php artisan migrate --force; php artisan db:seed --force; exec php -S 0.0.0.0:${PORT:-8000} server.php"]

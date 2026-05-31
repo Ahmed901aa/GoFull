@@ -15,4 +15,7 @@ RUN composer run-script post-autoload-dump 2>/dev/null || true
 RUN mkdir -p storage/framework/{sessions,views,cache} \
     && chmod -R 775 storage bootstrap/cache
 
-CMD ["sh", "-c", "php artisan migrate --force; php artisan db:seed --force; exec php -S 0.0.0.0:${PORT:-8000} server.php"]
+# Fix PHP 8.4 type error in ServeCommand (string + int)
+RUN sed -i 's/\$port + \$this->portOffset/(int)$port + $this->portOffset/' vendor/laravel/framework/src/Illuminate/Foundation/Console/ServeCommand.php
+
+CMD ["sh", "-c", "php artisan migrate --force; php artisan db:seed --force; exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]

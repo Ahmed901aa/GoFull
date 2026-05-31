@@ -32,5 +32,5 @@ RUN mkdir -p storage/framework/{sessions,views,cache} \
 # Expose port
 EXPOSE 8000
 
-# Start command - force PORT to integer
-CMD sh -c "php artisan migrate --force && php artisan db:seed --force 2>/dev/null; php artisan serve --host=0.0.0.0 --port=8000"
+# Start command - use PHP built-in server directly (avoids ServeCommand type bug)
+CMD ["sh", "-c", "php artisan migrate --force && php artisan db:seed --force; exec php -S 0.0.0.0:${PORT:-8000} -t public"]

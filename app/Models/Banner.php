@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 
 class Banner extends Model
 {
-    protected $fillable = ['title', 'subtitle', 'image_url', 'discount_code', 'color_hex', 'is_active', 'sort_order'];
+    protected $fillable = ['title', 'type', 'action', 'subtitle', 'image_url', 'discount_code', 'color_hex', 'is_active', 'sort_order'];
 
     protected $casts = [
         'is_active' => 'boolean',

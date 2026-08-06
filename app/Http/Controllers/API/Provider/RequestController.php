@@ -9,18 +9,51 @@ use App\Http\Requests\Provider\UpdateStatusRequest;
 use App\Models\ServiceRequest;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class RequestController extends Controller
 {
+    /** Max distance (km) a pending request can be from the provider. */
+    private const DISPATCH_RADIUS_KM = 30;
+
     public function index(): JsonResponse
     {
         $provider = auth()->user()->providerProfile;
 
-        $requests = ServiceRequest::where('status', 'pending')
+        $query = ServiceRequest::where('status', 'pending')
             ->where('service_type', $provider->service_type)
-            ->with('driver')
-            ->latest()
-            ->paginate(15);
+            // Hide requests this provider already rejected
+            ->whereDoesntHave('rejections', fn ($q) => $q->where('provider_id', $provider->id))
+            ->with('driver');
+
+        // Radius filter + nearest-first ordering (Haversine, km).
+        // Only applied when the provider has a known location.
+        // (SQL math functions require MySQL/MariaDB — skipped on SQLite dev.)
+        $supportsHaversine = in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb']);
+
+        if ($supportsHaversine && $provider->current_latitude !== null && $provider->current_longitude !== null) {
+            $haversine = '(6371 * acos(least(1.0, cos(radians(?)) * cos(radians(driver_latitude)) '
+                .'* cos(radians(driver_longitude) - radians(?)) '
+                .'+ sin(radians(?)) * sin(radians(driver_latitude)))))';
+
+            $query->select('*')
+                ->selectRaw("{$haversine} AS distance_km", [
+                    $provider->current_latitude,
+                    $provider->current_longitude,
+                    $provider->current_latitude,
+                ])
+                ->whereRaw("{$haversine} <= ?", [
+                    $provider->current_latitude,
+                    $provider->current_longitude,
+                    $provider->current_latitude,
+                    self::DISPATCH_RADIUS_KM,
+                ])
+                ->orderBy('distance_km');
+        } else {
+            $query->latest();
+        }
+
+        $requests = $query->paginate(15);
 
         return response()->json(['success' => true, 'data' => $requests]);
     }
@@ -68,21 +101,36 @@ class RequestController extends Controller
             ], 422);
         }
 
-        if (! $request->isPending()) {
+        // ── Atomic accept: conditional UPDATE prevents two providers
+        //    claiming the same request simultaneously (race condition). ──
+        $claimed = DB::transaction(function () use ($request, $provider) {
+            $affected = ServiceRequest::where('id', $request->id)
+                ->where('status', 'pending')
+                ->whereNull('provider_id')
+                ->update([
+                    'provider_id' => $provider->id,
+                    'status' => 'accepted',
+                    'accepted_at' => now(),
+                ]);
+
+            if ($affected === 0) {
+                return false;
+            }
+
+            // ── Auto-status: save previous availability, force active ──
+            $provider->update([
+                'was_available_before_order' => $provider->is_available,
+                'is_available' => true,
+            ]);
+
+            return true;
+        });
+
+        if (! $claimed) {
             return response()->json(['success' => false, 'message' => 'This request is no longer available.'], 422);
         }
 
-        // ── Auto-status: save previous availability, force active ──
-        $provider->update([
-            'was_available_before_order' => $provider->is_available,
-            'is_available' => true,
-        ]);
-
-        $request->update([
-            'provider_id' => $provider->id,
-            'status' => 'accepted',
-            'accepted_at' => now(),
-        ]);
+        $request->refresh();
 
         NotificationService::send(
             $request->driver,
@@ -167,21 +215,12 @@ class RequestController extends Controller
             return response()->json(['success' => false, 'message' => 'Only pending requests can be rejected.'], 422);
         }
 
-        $request->update([
-            'status' => 'cancelled',
-            'cancelled_at' => now(),
-            'cancelled_by' => 'provider',
-            'cancellation_reason' => 'تم الرفض من قبل مزود الخدمة',
-        ]);
+        $provider = auth()->user()->providerProfile;
 
-        NotificationService::send(
-            $request->driver,
-            'Request Rejected',
-            'A provider has declined your request. We are looking for another provider.',
-            ['request_id' => $request->id, 'status' => 'cancelled']
-        );
-
-        broadcast(new OrderCancelled($request))->toOthers();
+        // ── Per-provider rejection: the request stays PENDING so other
+        //    providers can still accept it. It is only hidden from
+        //    this provider's pending list. ──
+        $request->rejections()->firstOrCreate(['provider_id' => $provider->id]);
 
         return response()->json(['success' => true, 'message' => 'Request rejected successfully.']);
     }

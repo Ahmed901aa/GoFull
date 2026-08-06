@@ -15,6 +15,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'phone',
+        'phone_verified_at',
         'password',
         'role',
         'employee_type',
@@ -29,6 +30,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'password' => 'hashed',
+        'phone_verified_at' => 'datetime',
     ];
 
     // ========== Helpers ==========

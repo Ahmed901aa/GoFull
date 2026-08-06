@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\API\Provider;
 
+use App\Events\ProviderLocationUpdated;
 use App\Http\Controllers\Controller;
+use App\Models\ServiceRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -99,12 +101,64 @@ class ProfileController extends Controller
             return response()->json(['success' => false, 'message' => 'Provider profile not found.'], 404);
         }
 
+        // Distance since last stored position (metres) — used to throttle
+        // both the DB write and the WebSocket broadcast.
+        $movedMetres = $this->distanceMetres(
+            $profile->current_latitude,
+            $profile->current_longitude,
+            (float) $request->latitude,
+            (float) $request->longitude
+        );
+
+        $staleSeconds = $profile->location_updated_at
+            ? abs($profile->location_updated_at->diffInSeconds(now()))
+            : PHP_INT_MAX;
+
+        // Ignore GPS jitter: skip if moved < 15 m and updated < 30 s ago
+        if ($movedMetres !== null && $movedMetres < 15 && $staleSeconds < 30) {
+            return response()->json(['success' => true, 'message' => 'Location unchanged.']);
+        }
+
         $profile->update([
             'current_latitude' => $request->latitude,
             'current_longitude' => $request->longitude,
             'location_updated_at' => now(),
         ]);
 
+        // Push the new position to the customer over Reverb (WebSocket)
+        // when this provider has an active order.
+        $activeOrder = ServiceRequest::where('provider_id', $profile->id)
+            ->whereIn('status', ['accepted', 'en_route', 'arrived', 'in_progress'])
+            ->latest()
+            ->first();
+
+        if ($activeOrder) {
+            broadcast(new ProviderLocationUpdated(
+                $activeOrder,
+                (float) $request->latitude,
+                (float) $request->longitude,
+            ));
+        }
+
         return response()->json(['success' => true, 'message' => 'Location updated.']);
+    }
+
+    /**
+     * Haversine distance in metres. Null when there is no previous position.
+     */
+    private function distanceMetres(?float $lat1, ?float $lng1, float $lat2, float $lng2): ?float
+    {
+        if ($lat1 === null || $lng1 === null) {
+            return null;
+        }
+
+        $earthRadius = 6371000;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+
+        $a = sin($dLat / 2) ** 2
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        return $earthRadius * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 }

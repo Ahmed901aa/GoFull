@@ -9,6 +9,7 @@ use App\Http\Controllers\API\Driver\VehicleController;
 use App\Http\Controllers\API\FuelPriceController;
 use App\Http\Controllers\API\HomeController;
 use App\Http\Controllers\API\NotificationController;
+use App\Http\Controllers\API\OtpController;
 use App\Http\Controllers\API\ProfileController as UserProfileController;
 use App\Http\Controllers\API\Provider\AnalyticsController;
 use App\Http\Controllers\API\Provider\ProfileController;
@@ -18,8 +19,12 @@ use Illuminate\Support\Facades\Route;
 
 // ─── Public ───────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+
+    // OTP (SMS verification via iSend)
+    Route::post('/otp/send', [OtpController::class, 'send'])->middleware('throttle:3,1');
+    Route::post('/otp/verify', [OtpController::class, 'verify'])->middleware('throttle:10,1');
 });
 
 // ─── Public Content ──────────────────────────────────────────

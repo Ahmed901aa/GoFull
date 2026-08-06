@@ -117,4 +117,10 @@ class ServiceRequest extends Model
     {
         return $this->hasOne(Rating::class, 'request_id');
     }
+
+    // المزودون الذين رفضوا هذا الطلب
+    public function rejections()
+    {
+        return $this->hasMany(RequestRejection::class, 'request_id');
+    }
 }

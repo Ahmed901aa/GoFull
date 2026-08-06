@@ -9,6 +9,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\ProviderDocument;
 use App\Models\ProviderProfile;
 use App\Models\User;
+use App\Services\OtpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 
@@ -18,12 +19,20 @@ class AuthController extends Controller
     {
         $data = $request->validated();
 
+        // ── Verify the SMS code sent via /auth/otp/send ──
+        $otpResult = OtpService::verify($data['phone'], $data['otp_code'], 'registration');
+
+        if (! $otpResult['success']) {
+            return response()->json($otpResult, 422);
+        }
+
         $user = User::create([
-            'name'     => $data['name'],
-            'phone'    => $data['phone'],
-            'password' => Hash::make($data['password']),
-            'role'     => $data['role'],
-            'status'   => 'active',
+            'name'              => $data['name'],
+            'phone'             => $data['phone'],
+            'phone_verified_at' => now(),
+            'password'          => Hash::make($data['password']),
+            'role'              => $data['role'],
+            'status'            => 'active',
         ]);
 
         if ($data['role'] === 'provider') {

@@ -18,6 +18,7 @@ class RegisterRequest extends FormRequest
             'phone'    => ['required', 'string', 'max:20', 'unique:users,phone'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role'     => ['required', 'in:driver,provider'],
+            'otp_code' => ['required', 'digits:6'],
         ];
 
         if ($this->input('role') === 'provider') {
@@ -42,6 +43,8 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name.required'             => 'Name is required.',
+            'otp_code.required'         => 'The SMS verification code is required.',
+            'otp_code.digits'           => 'The verification code must be 6 digits.',
             'phone.required'            => 'Phone number is required.',
             'phone.unique'              => 'This phone number is already registered.',
             'password.required'         => 'Password is required.',

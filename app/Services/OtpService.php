@@ -80,7 +80,14 @@ class OtpService
             return ['success' => false, 'message' => 'انتهت صلاحية الرمز. يرجى طلب رمز جديد.'];
         }
 
-        if ($otp->code !== $code) {
+        // منع التخمين — 5 محاولات خاطئة كحد أقصى
+        if ($otp->hasTooManyAttempts()) {
+            $otp->update(['is_used' => true]);
+            return ['success' => false, 'message' => 'تم تجاوز عدد المحاولات المسموح. يرجى طلب رمز جديد.'];
+        }
+
+        if (! hash_equals($otp->code, $code)) {
+            $otp->increment('attempts');
             return ['success' => false, 'message' => 'رمز التحقق غير صحيح.'];
         }
 

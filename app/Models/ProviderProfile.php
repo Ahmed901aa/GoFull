@@ -37,6 +37,9 @@ class ProviderProfile extends Model
         'was_available_before_order' => 'boolean',
         'appointment_date' => 'datetime',
         'verified_at' => 'datetime',
+        'location_updated_at' => 'datetime',
+        'current_latitude' => 'float',
+        'current_longitude' => 'float',
         'average_rating' => 'decimal:2',
     ];
 

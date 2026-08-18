@@ -50,6 +50,8 @@ Route::middleware(['auth', 'role:admin,employee'])->prefix('admin')->name('admin
         Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 
         Route::get('/fuel-prices', [FuelPriceController::class, 'index'])->name('fuel_prices.index');
+        // Literal route MUST come before the {fuelPrice} wildcard
+        Route::patch('/fuel-prices/open-stations', [FuelPriceController::class, 'updateOpenStations'])->name('fuel_prices.open_stations');
         Route::patch('/fuel-prices/{fuelPrice}', [FuelPriceController::class, 'update'])->name('fuel_prices.update');
 
         Route::get('/settings', [AdminSettingController::class, 'index'])->name('settings.index');

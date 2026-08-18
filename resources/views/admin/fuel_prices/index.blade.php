@@ -4,6 +4,42 @@
 @section('page-title', 'أسعار الوقود')
 
 @section('content')
+    {{-- Open Stations Counter — live on the app home page --}}
+    <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+            <span class="card-title">المحطات المفتوحة الآن</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#2e7d32;">
+                <span style="width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;animation:pulse 2s infinite;"></span>
+                يظهر مباشرة في التطبيق
+            </span>
+        </div>
+        <div class="card-body" style="padding:20px;">
+            <form method="POST" action="{{ route('admin.fuel_prices.open_stations') }}">
+                @csrf
+                @method('PATCH')
+                <div style="display:grid;grid-template-columns:220px 120px 1fr;gap:16px;align-items:end;">
+                    <div>
+                        <label class="form-label" for="open-stations">عدد المحطات المفتوحة</label>
+                        <input id="open-stations"
+                               type="number"
+                               name="open_stations_count"
+                               min="0"
+                               step="1"
+                               value="{{ $openStations }}"
+                               class="form-control"
+                               required>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary" style="width:100%;">حفظ</button>
+                    </div>
+                    <div style="padding:9px 0;font-size:13px;color:var(--text-muted);">
+                        عند الحفظ يتم بث التحديث فورياً لجميع التطبيقات المفتوحة بدون تحديث يدوي.
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-header">
             <span class="card-title">إدارة أسعار الوقود والضريبة</span>
@@ -125,6 +161,10 @@
 
 @push('styles')
 <style>
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
     @media (max-width: 900px) {
         .card-body [style*="grid-template-columns"] {
             grid-template-columns: 1fr !important;

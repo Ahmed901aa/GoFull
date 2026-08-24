@@ -16,6 +16,14 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        // Production only gets idempotent reference data — never accounts
+        // with known passwords, never test orders. Create the real admin
+        // via `php artisan tinker` or a dedicated command.
+        if (app()->isProduction()) {
+            $this->seedReferenceData();
+            return;
+        }
+
         // ── Admin ────────────────────────────────────────────
         User::query()->updateOrCreate(
             ['phone' => '0910406699'],
@@ -92,18 +100,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // ── Fuel Prices ──────────────────────────────────────
-        FuelPrice::updateOrCreate(
-            ['fuel_type' => 'petrol', 'name_ar' => 'بنزين'],
-            ['price_per_liter' => 0.75, 'is_active' => true]
-        );
-        FuelPrice::updateOrCreate(
-            ['fuel_type' => 'diesel', 'name_ar' => 'ديزل'],
-            ['price_per_liter' => 0.85, 'is_active' => true]
-        );
-        // Deactivate old 91/95 entries if they exist
-        FuelPrice::where('name_ar', 'بنزين 91')->update(['is_active' => false]);
-        FuelPrice::where('name_ar', 'بنزين 95')->update(['is_active' => false]);
+        $this->seedReferenceData();
 
         // ── Banners / Offers ─────────────────────────────────
         Banner::updateOrCreate(
@@ -129,6 +126,29 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // Seed test orders & ratings for providers
+        $this->call(TestOrdersAndRatingsSeeder::class);
+    }
+
+    /**
+     * Idempotent reference data, safe for every environment:
+     * fuel prices + app settings. No accounts, no test orders.
+     */
+    private function seedReferenceData(): void
+    {
+        // ── Fuel Prices ──────────────────────────────────────
+        FuelPrice::updateOrCreate(
+            ['fuel_type' => 'petrol', 'name_ar' => 'بنزين'],
+            ['price_per_liter' => 0.75, 'is_active' => true]
+        );
+        FuelPrice::updateOrCreate(
+            ['fuel_type' => 'diesel', 'name_ar' => 'ديزل'],
+            ['price_per_liter' => 0.85, 'is_active' => true]
+        );
+        // Deactivate old 91/95 entries if they exist
+        FuelPrice::where('name_ar', 'بنزين 91')->update(['is_active' => false]);
+        FuelPrice::where('name_ar', 'بنزين 95')->update(['is_active' => false]);
+
         // ── App Settings ─────────────────────────────────────
         AppSetting::setValue('service_fee', '15.00');
         AppSetting::setValue('currency', 'د.ل');
@@ -136,8 +156,5 @@ class DatabaseSeeder extends Seeder
         AppSetting::setValue('towing_base_price', '50.00');
         AppSetting::setValue('app_name', 'GO FULL');
         AppSetting::setValue('support_phone', '0915909734');
-
-        // Seed test orders & ratings for providers
-        $this->call(TestOrdersAndRatingsSeeder::class);
     }
 }

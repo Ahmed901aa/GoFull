@@ -26,6 +26,9 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        // Push token is device-private — API responses embed User objects
+        // (driver ↔ provider), and neither party may see the other's token.
+        'fcm_token',
     ];
 
     protected $casts = [

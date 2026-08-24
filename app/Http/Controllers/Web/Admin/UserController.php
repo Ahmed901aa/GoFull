@@ -49,11 +49,18 @@ class UserController extends Controller
         }
 
         $user->update(['status' => 'suspended']);
+        // Revoke API sessions immediately — otherwise the existing bearer
+        // token keeps working and suspension only applies after logout.
+        $user->tokens()->delete();
         return back()->with('success', "User '{$user->name}' has been suspended.");
     }
 
     public function activate(User $user)
     {
+        if (in_array($user->role, ['admin', 'employee'])) {
+            return back()->with('error', 'Cannot manage admin or employee accounts here.');
+        }
+
         $user->update(['status' => 'active']);
         return back()->with('success', "User '{$user->name}' has been activated.");
     }

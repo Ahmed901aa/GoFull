@@ -13,6 +13,7 @@ class ServiceRequest extends Model
         'driver_id',
         'provider_id',
         'service_type',
+        'is_emergency',
         'status',
         'driver_latitude',
         'driver_longitude',
@@ -40,6 +41,7 @@ class ServiceRequest extends Model
     ];
 
     protected $casts = [
+        'is_emergency' => 'boolean',
         'driver_latitude' => 'decimal:8',
         'driver_longitude' => 'decimal:8',
         'destination_latitude' => 'decimal:8',
@@ -112,10 +114,18 @@ class ServiceRequest extends Model
         return $this->belongsTo(ProviderProfile::class, 'provider_id');
     }
 
-    // الطلب له تقييم واحد فقط
+    // تقييم الزبون لمزود الخدمة (الاتجاه الأساسي المعروض في التطبيق)
     public function rating()
     {
-        return $this->hasOne(Rating::class, 'request_id');
+        return $this->hasOne(Rating::class, 'request_id')
+            ->where('rated_by', 'driver');
+    }
+
+    // تقييم مزود الخدمة للزبون (الاتجاه العكسي)
+    public function customerRating()
+    {
+        return $this->hasOne(Rating::class, 'request_id')
+            ->where('rated_by', 'provider');
     }
 
     // المزودون الذين رفضوا هذا الطلب

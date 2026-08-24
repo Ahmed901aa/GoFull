@@ -23,20 +23,22 @@ class LoginController extends Controller
 
         $user = User::where('phone', $credentials['phone'])->first();
 
-        if (! $user || ! in_array($user->role, ['admin', 'employee'])) {
-            return back()->withErrors(['phone' => 'No admin account found with this phone number.'])->withInput();
+        // One generic message for every credential failure so the form
+        // can't be used to enumerate which phone numbers are admin accounts.
+        $isAdminAccount = $user && in_array($user->role, ['admin', 'employee']);
+
+        if (! $isAdminAccount
+            || ! Auth::attempt(['phone' => $credentials['phone'], 'password' => $credentials['password']])) {
+            return back()->withErrors(['phone' => 'Invalid phone number or password.'])->withInput();
         }
 
         if (! $user->isActive()) {
+            Auth::logout();
             return back()->withErrors(['phone' => 'Your account has been suspended.'])->withInput();
         }
 
-        if (Auth::attempt(['phone' => $credentials['phone'], 'password' => $credentials['password']])) {
-            $request->session()->regenerate();
-            return redirect()->route('admin.dashboard');
-        }
-
-        return back()->withErrors(['phone' => 'Invalid phone number or password.'])->withInput();
+        $request->session()->regenerate();
+        return redirect()->route('admin.dashboard');
     }
 
     public function logout(Request $request)

@@ -48,9 +48,10 @@ class RequestController extends Controller
                     $provider->current_latitude,
                     self::DISPATCH_RADIUS_KM,
                 ])
+                ->orderByDesc('is_emergency') // emergencies first
                 ->orderBy('distance_km');
         } else {
-            $query->latest();
+            $query->orderByDesc('is_emergency')->latest();
         }
 
         $requests = $query->paginate(15);
@@ -194,8 +195,10 @@ class RequestController extends Controller
             'comment' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $rating = $serviceRequest->rating()->updateOrCreate(
-            ['request_id' => $serviceRequest->id],
+        // Separate row from the customer's rating of the provider —
+        // this is the provider rating the CUSTOMER.
+        $rating = $serviceRequest->customerRating()->updateOrCreate(
+            ['request_id' => $serviceRequest->id, 'rated_by' => 'provider'],
             [
                 'rating' => request('rating'),
                 'comment' => request('comment'),
@@ -233,6 +236,18 @@ class RequestController extends Controller
             return response()->json(['success' => false, 'message' => 'Request not found.'], 404);
         }
 
+        // Business rule (2026-08): once a provider has ACCEPTED an order,
+        // they may not cancel it — the customer is relying on them. The
+        // route stays (old app builds still call it) but always refuses.
+        // Providers decline work by REJECTING while an order is pending;
+        // admins can still cancel via the dashboard.
+        return response()->json([
+            'success' => false,
+            'message' => 'Accepted orders cannot be cancelled. Please contact support if you are unable to complete this order.',
+        ], 403);
+
+        // Unreachable — kept for reference of the previous flow.
+        // @phpstan-ignore-next-line
         $cancellableStatuses = ['accepted', 'en_route', 'arrived', 'in_progress'];
         if (! in_array($request->status, $cancellableStatuses)) {
             return response()->json(['success' => false, 'message' => 'Only active requests can be cancelled.'], 422);
@@ -252,10 +267,12 @@ class RequestController extends Controller
             'is_available' => $provider->was_available_before_order,
         ]);
 
+        // NOTE: cancellation is terminal — nothing re-dispatches the order,
+        // so the message must not promise a new provider.
         NotificationService::send(
             $request->driver,
             'Request Cancelled',
-            'The provider has cancelled your request. We are looking for another provider.',
+            'The provider has cancelled your request. You can create a new request at any time.',
             ['request_id' => $request->id, 'status' => 'cancelled']
         );
 
@@ -276,6 +293,18 @@ class RequestController extends Controller
         }
 
         $newStatus = $request->status;
+
+        // Idempotent replay (e.g. client retry after a timeout): the status
+        // is already set — succeed without resetting timestamps or
+        // re-notifying the customer.
+        if ($serviceRequest->status === $newStatus) {
+            return response()->json([
+                'success' => true,
+                'message' => "Status is already '{$newStatus}'.",
+                'data' => $serviceRequest->fresh(['driver', 'provider']),
+            ]);
+        }
+
         $timestamps = [
             'arrived' => ['arrived_at' => now()],
             'completed' => ['completed_at' => now()],

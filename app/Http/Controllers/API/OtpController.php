@@ -24,17 +24,20 @@ class OtpController extends Controller
 
         $purpose = $data['purpose'] ?? 'registration';
 
-        // Registration: phone must NOT exist yet. Password reset: it must.
-        $exists = User::where('phone', $data['phone'])->exists();
-
-        if ($purpose === 'registration' && $exists) {
+        // Registration must also reject soft-deleted phones: the DB unique
+        // index on users.phone counts trashed rows, so registration would
+        // fail AFTER the SMS was already paid for. Password reset needs a
+        // live (non-deleted) account.
+        if ($purpose === 'registration'
+            && User::withTrashed()->where('phone', $data['phone'])->exists()) {
             return response()->json([
                 'success' => false,
                 'message' => 'This phone number is already registered.',
             ], 422);
         }
 
-        if ($purpose === 'password_reset' && ! $exists) {
+        if ($purpose === 'password_reset'
+            && ! User::where('phone', $data['phone'])->exists()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No account found for this phone number.',

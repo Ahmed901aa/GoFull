@@ -29,6 +29,7 @@ class ProfileController extends Controller
         // Calculate ratings live from the ratings table (raw query to avoid GROUP BY issue)
         $ratingStats = DB::table('ratings')
             ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->where('ratings.rated_by', 'driver')
             ->where('service_requests.provider_id', $profile->id)
             ->selectRaw('ROUND(AVG(ratings.rating), 1) as avg_rating, COUNT(*) as total_ratings')
             ->first();
@@ -91,8 +92,8 @@ class ProfileController extends Controller
     public function updateLocation(Request $request): JsonResponse
     {
         $request->validate([
-            'latitude' => ['required', 'numeric'],
-            'longitude' => ['required', 'numeric'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
         ]);
 
         $profile = auth()->user()->providerProfile;

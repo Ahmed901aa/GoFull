@@ -36,11 +36,13 @@ class ProviderVerificationController extends Controller
             // Real rating from ratings table
             ->addSelect(['real_avg_rating' => DB::table('ratings')
                 ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->where('ratings.rated_by', 'driver')
                 ->whereColumn('service_requests.provider_id', 'provider_profiles.id')
                 ->selectRaw('ROUND(AVG(ratings.rating), 1)'),
             ])
             ->addSelect(['real_total_ratings' => DB::table('ratings')
                 ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->where('ratings.rated_by', 'driver')
                 ->whereColumn('service_requests.provider_id', 'provider_profiles.id')
                 ->selectRaw('COUNT(*)'),
             ])
@@ -60,6 +62,7 @@ class ProviderVerificationController extends Controller
 
     public function show(ProviderProfile $provider)
     {
+        $this->authorizeServiceType($provider);
         $provider->load(['user', 'documents', 'verifiedBy']);
         $provider->loadCount([
             'serviceRequests as completed_orders' => fn ($q) => $q->where('status', 'completed'),
@@ -71,6 +74,7 @@ class ProviderVerificationController extends Controller
         // Real rating computed from ratings table
         $ratingStats = DB::table('ratings')
             ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->where('ratings.rated_by', 'driver')
             ->where('service_requests.provider_id', $provider->id)
             ->selectRaw('ROUND(AVG(ratings.rating), 1) as avg_rating, COUNT(*) as total_ratings')
             ->first();
@@ -89,6 +93,7 @@ class ProviderVerificationController extends Controller
         // ── Rating distribution (1-5 stars) ─────────────────
         $ratingDistribution = DB::table('ratings')
             ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->where('ratings.rated_by', 'driver')
             ->where('service_requests.provider_id', $provider->id)
             ->select('ratings.rating', DB::raw('COUNT(*) as count'))
             ->groupBy('ratings.rating')
@@ -97,6 +102,7 @@ class ProviderVerificationController extends Controller
         // ── Recent ratings with comments ────────────────────
         $recentRatings = DB::table('ratings')
             ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->where('ratings.rated_by', 'driver')
             ->join('users', 'users.id', '=', 'service_requests.driver_id')
             ->where('service_requests.provider_id', $provider->id)
             ->select('ratings.rating', 'ratings.comment', 'ratings.created_at', 'users.name as driver_name')
@@ -126,6 +132,7 @@ class ProviderVerificationController extends Controller
 
     public function setAppointment(SetAppointmentRequest $request, ProviderProfile $provider)
     {
+        $this->authorizeServiceType($provider);
         $provider->update([
             'verification_status' => 'appointment_set',
             'appointment_date'    => $request->appointment_date,
@@ -146,6 +153,7 @@ class ProviderVerificationController extends Controller
 
     public function approve(ProviderProfile $provider)
     {
+        $this->authorizeServiceType($provider);
         $provider->update([
             'verification_status' => 'approved',
             'verified_at'         => now(),
@@ -165,6 +173,7 @@ class ProviderVerificationController extends Controller
 
     public function reject(Request $request, ProviderProfile $provider)
     {
+        $this->authorizeServiceType($provider);
         $request->validate([
             'rejection_reason' => ['required', 'string', 'max:500'],
         ]);
@@ -182,6 +191,16 @@ class ProviderVerificationController extends Controller
         );
 
         return back()->with('success', "Provider '{$provider->user->name}' rejected.");
+    }
+
+    /**
+     * The index() list is scoped per employee type, but direct-URL access to
+     * single-provider actions must enforce the same boundary.
+     */
+    private function authorizeServiceType(ProviderProfile $provider): void
+    {
+        $filter = $this->resolveServiceType();
+        abort_if($filter && $provider->service_type !== $filter, 403);
     }
 
     private function resolveServiceType(): ?string

@@ -18,7 +18,8 @@ Route::redirect('/dashboard', '/admin/dashboard');
 // ─── Guest ────────────────────────────────────────────────────
 Route::middleware('guest')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/login', [LoginController::class, 'showForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login']);
+    // Throttled: the admin panel must not be brute-forceable.
+    Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:5,1');
 });
 
 // ─── Admin + Employee ─────────────────────────────────────────

@@ -45,6 +45,10 @@ class ServiceMonitorController extends Controller
 
     public function show(ServiceRequest $request)
     {
+        // Same per-employee-type boundary as index() — direct URLs included.
+        $filter = $this->resolveServiceType();
+        abort_if($filter && $request->service_type !== $filter, 403);
+
         $request->load(['driver', 'provider.user', 'rating']);
 
         return view('admin.monitor.show', compact('request'));

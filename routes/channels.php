@@ -23,3 +23,11 @@ Broadcast::channel('driver.{driverId}', function (User $user, int $driverId) {
 Broadcast::channel('provider.{providerId}', function (User $user, int $providerId) {
     return $user->providerProfile?->id === $providerId;
 });
+
+// New/cancelled order feed per service type — carries customer PII, so it
+// is restricted to authenticated, APPROVED providers of that exact type.
+Broadcast::channel('orders.{serviceType}', function (User $user, string $serviceType) {
+    return $user->isProvider()
+        && $user->providerProfile?->isApproved()
+        && $user->providerProfile->service_type === $serviceType;
+});

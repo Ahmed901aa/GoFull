@@ -31,7 +31,7 @@ class ProfileController extends Controller
                 $completedOrders = $profile->serviceRequests()->where('status', 'completed')->count();
 
                 // حساب متوسط التقييم الذي حصل عليه مزود الخدمة من السائقين
-                $ratingStats = Rating::whereHas('serviceRequest', function ($q) use ($profile) {
+                $ratingStats = Rating::where('rated_by', 'driver')->whereHas('serviceRequest', function ($q) use ($profile) {
                     $q->where('provider_id', $profile->id)
                         ->where('status', 'completed');
                 })->selectRaw('ROUND(AVG(rating), 1) as avg_rating, COUNT(*) as total_ratings')
@@ -53,7 +53,7 @@ class ProfileController extends Controller
             $completedOrders = $user->serviceRequests()->where('status', 'completed')->count();
 
             // حساب متوسط التقييم الذي حصل عليه السائق من مزودي الخدمة
-            $ratingStats = Rating::whereHas('serviceRequest', function ($q) use ($user) {
+            $ratingStats = Rating::where('rated_by', 'provider')->whereHas('serviceRequest', function ($q) use ($user) {
                 $q->where('driver_id', $user->id)
                     ->where('status', 'completed');
             })->selectRaw('ROUND(AVG(rating), 1) as avg_rating, COUNT(*) as total_ratings')

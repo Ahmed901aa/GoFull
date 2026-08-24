@@ -40,7 +40,7 @@ class AnalyticsController extends Controller
             ->sum('total');
 
         // Average rating
-        $ratingStats = Rating::whereIn('request_id', function ($q) use ($provider) {
+        $ratingStats = Rating::where('rated_by', 'driver')->whereIn('request_id', function ($q) use ($provider) {
             $q->select('id')
                 ->from('service_requests')
                 ->where('provider_id', $provider->id)

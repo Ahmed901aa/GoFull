@@ -18,4 +18,4 @@ RUN mkdir -p storage/framework/{sessions,views,cache} \
 # Fix PHP 8.4 type error in ServeCommand (string + int)
 RUN sed -i 's/\$port + \$this->portOffset/(int)$port + $this->portOffset/' vendor/laravel/framework/src/Illuminate/Foundation/Console/ServeCommand.php
 
-CMD ["sh", "-c", "php artisan migrate --force; php artisan db:seed --force; exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
+CMD ["sh", "-c", "php artisan migrate --force; exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]

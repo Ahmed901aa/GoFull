@@ -32,7 +32,8 @@ class UpdateStatusRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $request = $this->route('request');
+            // Route parameter is {serviceRequest} (see routes/api.php).
+            $request = $this->route('serviceRequest');
 
             // Resolve model if route binding gave us a raw ID
             if (is_string($request) || is_int($request)) {
@@ -40,6 +41,10 @@ class UpdateStatusRequest extends FormRequest
             }
 
             if (! $request) return;
+
+            // Re-sending the current status is treated as an idempotent
+            // no-op by the controller (safe retry) — not a violation.
+            if ($request->status === $this->input('status')) return;
 
             $chain = [
                 'accepted'    => 'en_route',

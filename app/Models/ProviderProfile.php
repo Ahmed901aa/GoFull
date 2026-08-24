@@ -98,7 +98,7 @@ class ProviderProfile extends Model
             ServiceRequest::class,
             'provider_id',  // FK في service_requests
             'request_id',   // FK في ratings
-        );
+        )->where('ratings.rated_by', 'driver'); // تقييمات الزبائن للمزود فقط
     }
 
     // من وثّق هذا الـ provider (admin أو employee)

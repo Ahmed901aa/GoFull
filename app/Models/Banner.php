@@ -35,12 +35,15 @@ class Banner extends Model
             return $this->image_url;
         }
 
-        // Absolute public path (e.g. /images/logo.png)
+        // Absolute public path (e.g. /images/logo.png).
+        // url() uses the CURRENT request's host, so the image resolves for
+        // whatever IP/hostname the client reached us on (APP_URL drifts in
+        // dev when the LAN IP changes). Falls back to APP_URL off-request.
         if (str_starts_with($this->image_url, '/')) {
-            return rtrim(config('app.url'), '/').$this->image_url;
+            return url($this->image_url);
         }
 
-        // Relative storage path → build full URL from public storage disk
-        return Storage::disk('public')->url($this->image_url);
+        // Relative storage path → served from the public disk symlink
+        return url('/storage/'.ltrim($this->image_url, '/'));
     }
 }

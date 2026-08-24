@@ -32,6 +32,7 @@ class RatingController extends Controller
         }
 
         $rating = $serviceRequest->rating()->create([
+            'rated_by' => 'driver',
             'rating' => $request->rating,
             'comment' => $request->comment,
         ]);

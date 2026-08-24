@@ -3,7 +3,6 @@
 namespace App\Events;
 
 use App\Models\ServiceRequest;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -27,7 +26,7 @@ class OrderCancelled implements ShouldBroadcast
     public function broadcastOn(): array
     {
         $channels = [
-            new Channel('orders.'.$this->order->service_type),
+            new PrivateChannel('orders.'.$this->order->service_type),
             new PrivateChannel('driver.'.$this->order->driver_id),
         ];
 

@@ -92,11 +92,13 @@ class AnalyticsController extends Controller
             ])
             ->addSelect(['real_avg_rating' => DB::table('ratings')
                 ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->where('ratings.rated_by', 'driver')
                 ->whereColumn('service_requests.provider_id', 'provider_profiles.id')
                 ->selectRaw('ROUND(AVG(ratings.rating), 1)'),
             ])
             ->addSelect(['real_total_ratings' => DB::table('ratings')
                 ->join('service_requests', 'service_requests.id', '=', 'ratings.request_id')
+                ->where('ratings.rated_by', 'driver')
                 ->whereColumn('service_requests.provider_id', 'provider_profiles.id')
                 ->selectRaw('COUNT(*)'),
             ])

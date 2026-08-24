@@ -3,9 +3,9 @@
 namespace App\Events;
 
 use App\Models\ServiceRequest;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -22,13 +22,15 @@ class NewOrderCreated implements ShouldBroadcast
     public function __construct(public ServiceRequest $order) {}
 
     /**
-     * Public channel — all providers of this service type listen here.
-     * The Flutter app subscribes to "orders.fuel_delivery" or "orders.towing".
+     * Private channel — the payload carries customer PII (name, phone,
+     * exact GPS), so only authenticated, approved providers of this
+     * service type may listen (see routes/channels.php).
+     * Clients subscribe to "private-orders.fuel_delivery" / "private-orders.towing".
      */
     public function broadcastOn(): array
     {
         return [
-            new Channel('orders.'.$this->order->service_type),
+            new PrivateChannel('orders.'.$this->order->service_type),
         ];
     }
 
@@ -47,6 +49,7 @@ class NewOrderCreated implements ShouldBroadcast
         return [
             'id' => $this->order->id,
             'service_type' => $this->order->service_type,
+            'is_emergency' => (bool) $this->order->is_emergency,
             'status' => $this->order->status,
             'driver_name' => $this->order->driver?->name,
             'driver_phone' => $this->order->driver?->phone,

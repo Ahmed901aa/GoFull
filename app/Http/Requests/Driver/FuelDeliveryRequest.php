@@ -20,6 +20,7 @@ class FuelDeliveryRequest extends FormRequest
             'fuel_type'        => ['required', 'in:petrol,diesel'],
             'fuel_quantity'    => ['required', 'numeric', 'min:1', 'max:200'],
             'notes'            => ['nullable', 'string', 'max:500'],
+            'is_emergency'     => ['sometimes', 'boolean'],
         ];
     }
 

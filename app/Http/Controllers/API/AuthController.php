@@ -11,6 +11,7 @@ use App\Models\ProviderProfile;
 use App\Models\User;
 use App\Services\OtpService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -19,42 +20,54 @@ class AuthController extends Controller
     {
         $data = $request->validated();
 
-        // ── Verify the SMS code sent via /auth/otp/send ──
-        $otpResult = OtpService::verify($data['phone'], $data['otp_code'], 'registration');
+        // Atomic: OTP consumption + user + profile + documents either all
+        // commit or all roll back — no orphan users, no burned OTP on a
+        // partial failure.
+        $result = DB::transaction(function () use ($data) {
+            $otpResult = OtpService::verify($data['phone'], $data['otp_code'], 'registration');
 
-        if (! $otpResult['success']) {
-            return response()->json($otpResult, 422);
-        }
+            if (! $otpResult['success']) {
+                return ['otp_error' => $otpResult];
+            }
 
-        $user = User::create([
-            'name'              => $data['name'],
-            'phone'             => $data['phone'],
-            'phone_verified_at' => now(),
-            'password'          => Hash::make($data['password']),
-            'role'              => $data['role'],
-            'status'            => 'active',
-        ]);
-
-        if ($data['role'] === 'provider') {
-            $profile = ProviderProfile::create([
-                'user_id'       => $user->id,
-                'service_type'  => $data['service_type'],
-                'vehicle_make'  => $data['vehicle_make'],
-                'vehicle_model' => $data['vehicle_model'],
-                'vehicle_year'  => $data['vehicle_year'],
-                'vehicle_plate' => $data['vehicle_plate'],
-                'vehicle_color' => $data['vehicle_color'] ?? null,
+            $user = User::create([
+                'name'              => $data['name'],
+                'phone'             => $data['phone'],
+                'phone_verified_at' => now(),
+                'password'          => Hash::make($data['password']),
+                'role'              => $data['role'],
+                'status'            => 'active',
             ]);
 
-            foreach ($data['documents'] as $doc) {
-                $path = $doc['file']->store('documents', 'public');
-                ProviderDocument::create([
-                    'provider_id'   => $profile->id,
-                    'document_type' => $doc['type'],
-                    'document_path' => $path,
+            if ($data['role'] === 'provider') {
+                $profile = ProviderProfile::create([
+                    'user_id'       => $user->id,
+                    'service_type'  => $data['service_type'],
+                    'vehicle_make'  => $data['vehicle_make'],
+                    'vehicle_model' => $data['vehicle_model'],
+                    'vehicle_year'  => $data['vehicle_year'],
+                    'vehicle_plate' => $data['vehicle_plate'],
+                    'vehicle_color' => $data['vehicle_color'] ?? null,
                 ]);
+
+                foreach ($data['documents'] as $doc) {
+                    $path = $doc['file']->store('documents', 'public');
+                    ProviderDocument::create([
+                        'provider_id'   => $profile->id,
+                        'document_type' => $doc['type'],
+                        'document_path' => $path,
+                    ]);
+                }
             }
+
+            return ['user' => $user];
+        });
+
+        if (isset($result['otp_error'])) {
+            return response()->json($result['otp_error'], 422);
         }
+
+        $user = $result['user'];
 
         $token = $user->createToken('api-token')->plainTextToken;
 
@@ -124,6 +137,33 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Logged out successfully.',
+        ]);
+    }
+
+    // ─── Reset Password (forgot password, via OTP) ────────────────
+    // Completes the `purpose=password_reset` OTP flow: verify the code,
+    // set the new password, revoke every existing token.
+    public function resetPassword(): JsonResponse
+    {
+        $data = request()->validate([
+            'phone'    => ['required', 'string', 'exists:users,phone'],
+            'otp_code' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $otpResult = OtpService::verify($data['phone'], $data['otp_code'], 'password_reset');
+
+        if (! $otpResult['success']) {
+            return response()->json($otpResult, 422);
+        }
+
+        $user = User::where('phone', $data['phone'])->firstOrFail();
+        $user->update(['password' => Hash::make($data['password'])]);
+        $user->tokens()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset successfully. Please log in with your new password.',
         ]);
     }
 

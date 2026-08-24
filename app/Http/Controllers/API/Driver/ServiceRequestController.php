@@ -13,6 +13,7 @@ use App\Models\ProviderProfile;
 use App\Models\ServiceRequest;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class ServiceRequestController extends Controller
 {
@@ -27,33 +28,55 @@ class ServiceRequestController extends Controller
         return response()->json(['success' => true, 'data' => $requests]);
     }
 
+
+    /**
+     * Atomically check "no active order" and create the new one. Locks the
+     * user row so a fast double-tap cannot create two active orders.
+     * Returns null when an active order already exists.
+     */
+    private function createIfNoActive(array $attributes): ?ServiceRequest
+    {
+        return DB::transaction(function () use ($attributes) {
+            DB::table('users')->where('id', auth()->id())->lockForUpdate()->first();
+
+            $hasActive = auth()->user()
+                ->serviceRequests()
+                ->whereIn('status', ['pending', 'accepted', 'en_route', 'arrived', 'in_progress'])
+                ->exists();
+
+            return $hasActive ? null : ServiceRequest::create($attributes);
+        });
+    }
+
     public function storeFuel(FuelDeliveryRequest $request): JsonResponse
     {
-        $hasActive = auth()->user()
-            ->serviceRequests()
-            ->whereIn('status', ['pending', 'accepted', 'en_route', 'arrived', 'in_progress'])
-            ->exists();
-
-        if ($hasActive) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You already have an active request. Please wait for it to complete.',
-            ], 422);
-        }
-
         $data = $request->validated();
 
-        // Auto-calculate pricing from fuel_prices table
+        // Auto-calculate pricing from fuel_prices table. No active price row
+        // means the admin disabled this fuel type — refuse rather than
+        // creating a 0-priced order.
         $fuelPrice = FuelPrice::where('fuel_type', $data['fuel_type'])->active()->first();
-        $pricePerLiter = $fuelPrice ? $fuelPrice->price_per_liter : 0;
+        if (! $fuelPrice) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This fuel type is currently unavailable. Please try again later.',
+            ], 422);
+        }
+        $pricePerLiter = $fuelPrice->price_per_liter;
         $quantity = $data['fuel_quantity'];
         $subtotal = round($pricePerLiter * $quantity, 2);
-        $serviceFee = (float) AppSetting::getValue('service_fee', 15);
+        $isEmergency = (bool) ($data['is_emergency'] ?? false);
+        // Emergency surcharge is admin-configurable (app_settings key
+        // 'emergency_fee', default 0 = no surcharge) and folds into the
+        // service fee so income reports need no changes.
+        $serviceFee = (float) AppSetting::getValue('service_fee', 15)
+            + ($isEmergency ? (float) AppSetting::getValue('emergency_fee', 0) : 0);
         $total = round($subtotal + $serviceFee, 2);
 
-        $serviceRequest = ServiceRequest::create([
+        $serviceRequest = $this->createIfNoActive([
             'driver_id' => auth()->id(),
             'service_type' => 'fuel_delivery',
+            'is_emergency' => $isEmergency,
             'status' => 'pending',
             'driver_latitude' => $data['driver_latitude'],
             'driver_longitude' => $data['driver_longitude'],
@@ -67,6 +90,16 @@ class ServiceRequestController extends Controller
             'notes' => $data['notes'] ?? null,
         ]);
 
+        if (! $serviceRequest) {
+            // `code` lets clients branch on the CONFLICT itself instead of
+            // string-matching the human message (which may be localized).
+            return response()->json([
+                'success' => false,
+                'code' => 'ACTIVE_ORDER_EXISTS',
+                'message' => 'You already have an active order. Please wait until your current order is completed before creating a new order.',
+            ], 422);
+        }
+
         $providers = ProviderProfile::where('service_type', 'fuel_delivery')
             ->where('verification_status', 'approved')
             ->where('is_available', true)
@@ -75,9 +108,11 @@ class ServiceRequestController extends Controller
 
         NotificationService::sendToMany(
             $providers->pluck('user')->filter(),
-            'New Fuel Delivery Request',
-            'A new fuel delivery request is available near you.',
-            ['request_id' => $serviceRequest->id, 'type' => 'fuel_delivery']
+            $isEmergency ? '🚨 Emergency Fuel Request' : 'New Fuel Delivery Request',
+            $isEmergency
+                ? 'A customer ran out of fuel nearby and needs URGENT delivery.'
+                : 'A new fuel delivery request is available near you.',
+            ['request_id' => $serviceRequest->id, 'type' => 'fuel_delivery', 'is_emergency' => $isEmergency]
         );
 
         broadcast(new NewOrderCreated($serviceRequest))->toOthers();
@@ -91,18 +126,6 @@ class ServiceRequestController extends Controller
 
     public function storeTowing(TowingRequest $request): JsonResponse
     {
-        $hasActive = auth()->user()
-            ->serviceRequests()
-            ->whereIn('status', ['pending', 'accepted', 'en_route', 'arrived', 'in_progress'])
-            ->exists();
-
-        if ($hasActive) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You already have an active request. Please wait for it to complete.',
-            ], 422);
-        }
-
         $data = $request->validated();
 
         // Auto-calculate towing pricing from app_settings
@@ -110,7 +133,7 @@ class ServiceRequestController extends Controller
         $serviceFee = (float) AppSetting::getValue('service_fee', 15);
         $total = round($towingBasePrice + $serviceFee, 2);
 
-        $serviceRequest = ServiceRequest::create([
+        $serviceRequest = $this->createIfNoActive([
             'driver_id' => auth()->id(),
             'service_type' => 'towing',
             'status' => 'pending',
@@ -127,6 +150,16 @@ class ServiceRequestController extends Controller
             'total' => $total,
             'notes' => $data['notes'] ?? null,
         ]);
+
+        if (! $serviceRequest) {
+            // `code` lets clients branch on the CONFLICT itself instead of
+            // string-matching the human message (which may be localized).
+            return response()->json([
+                'success' => false,
+                'code' => 'ACTIVE_ORDER_EXISTS',
+                'message' => 'You already have an active order. Please wait until your current order is completed before creating a new order.',
+            ], 422);
+        }
 
         $providers = ProviderProfile::where('service_type', 'towing')
             ->where('verification_status', 'approved')

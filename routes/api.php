@@ -25,6 +25,11 @@ Route::prefix('auth')->group(function () {
     // OTP (SMS verification via iSend)
     Route::post('/otp/send', [OtpController::class, 'send'])->middleware('throttle:3,1');
     Route::post('/otp/verify', [OtpController::class, 'verify'])->middleware('throttle:10,1');
+
+    // Forgot password: send OTP with purpose=password_reset, then call this
+    // directly with {phone, otp_code, password, password_confirmation}.
+    // (Do NOT pre-verify via /otp/verify — codes are single-use.)
+    Route::post('/password/reset', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 });
 
 // ─── Public Content ──────────────────────────────────────────

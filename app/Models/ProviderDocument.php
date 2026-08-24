@@ -28,7 +28,8 @@ class ProviderDocument extends Model
             return null;
         }
 
-        return Storage::disk('public')->url($this->document_path);
+        // Request-host based (APP_URL drifts in dev; see Banner model).
+        return url('/storage/'.ltrim($this->document_path, '/'));
     }
 
     // ========== Helpers ==========

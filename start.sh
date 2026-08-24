@@ -5,7 +5,6 @@ sed -i 's/$port + $this->portOffset/(int)$port + $this->portOffset/' vendor/lara
 
 # Run migrations and seed
 php artisan migrate --force 2>/dev/null
-php artisan db:seed --force 2>/dev/null
 php artisan route:clear 2>/dev/null
 php artisan config:clear 2>/dev/null
 

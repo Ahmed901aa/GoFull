@@ -99,6 +99,14 @@ class OtpService
     // ─── إرسال SMS عبر iSend ──────────────────────────────────────
     private static function sendSms(string $phone, string $code): bool
     {
+        // Dev fallback: without an SMS gateway token, registration would be
+        // impossible. Outside production, log the code instead of sending.
+        // In production a missing token must remain a hard failure.
+        if (blank(config('services.isend.api_token')) && ! app()->isProduction()) {
+            Log::info("DEV OTP (no ISEND_API_TOKEN set) for {$phone}: {$code}");
+            return true;
+        }
+
         try {
             $message = "GoFull - رمز التحقق الخاص بك هو: {$code}\nصالح لمدة " . self::OTP_EXPIRY_MINUTES . " دقائق. لا تشاركه مع أحد.";
 

@@ -305,15 +305,21 @@ class RequestController extends Controller
             ]);
         }
 
-        $timestamps = [
-            'arrived' => ['arrived_at' => now()],
-            'completed' => ['completed_at' => now()],
-        ];
+        // Timestamps, with backfill: a forward jump (a dropped intermediate
+        // request on a flaky mobile connection) must not leave a hole in the
+        // audit trail, so any passed-over milestone gets stamped now.
+        $updates = ['status' => $newStatus];
+        $newIndex = array_search($newStatus, UpdateStatusRequest::LIFECYCLE, true);
+        $arrivedIndex = array_search('arrived', UpdateStatusRequest::LIFECYCLE, true);
 
-        $serviceRequest->update(array_merge(
-            ['status' => $newStatus],
-            $timestamps[$newStatus] ?? []
-        ));
+        if ($newIndex >= $arrivedIndex && $serviceRequest->arrived_at === null) {
+            $updates['arrived_at'] = now();
+        }
+        if ($newStatus === 'completed') {
+            $updates['completed_at'] = now();
+        }
+
+        $serviceRequest->update($updates);
 
         // ── Auto-status: restore previous availability on completion ──
         if ($newStatus === 'completed') {
